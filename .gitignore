@@ -1,0 +1,12 @@
+**/target
+*.swp
+*.iml
+.idea
+dependency-reduced-pom.xml
+.DS_Store
+*.log
+.classpath
+.project
+.settings
+.cache-main
+.cache-tests
