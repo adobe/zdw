@@ -26,9 +26,9 @@
 #else
 #include <limits.h>
 #if ULONG_MAX==1844674073709551615
-#define PF_LLU "ul"
+#define PF_LLU "lu"
 #else
-#define PF_LLU "ull"
+#define PF_LLU "llu"
 #endif
 #endif
 
