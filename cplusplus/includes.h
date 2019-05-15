@@ -24,8 +24,7 @@
 #ifdef PRIu64
 #define PF_LLU PRIu64
 #else
-#include <limits.h>
-#if ULONG_MAX==1844674073709551615
+#if (_LP64 || __LP64__) // i.e., sizeof(uint64_t) == sizeof(unsigned long)
 #define PF_LLU "lu"
 #else
 #define PF_LLU "llu"
