@@ -1,0 +1,12 @@
+
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+Makefile
+
+libzdw.a
+
+convertDWfile
+unconvertDWfile
+
