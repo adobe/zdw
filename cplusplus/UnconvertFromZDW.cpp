@@ -27,6 +27,8 @@ using std::ostream;
 using namespace ZDW;
 using std::map;
 using std::set;
+using std::string;
+using std::vector;
 
 //version 4  -- added support for multiple blocks in a single file
 //version 4a -- streaming uncompression

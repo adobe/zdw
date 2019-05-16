@@ -20,6 +20,9 @@
 #include <stdlib.h>
 #include <algorithm>
 
+using std::string;
+
+
 //*****************************
 void showVersion()
 {

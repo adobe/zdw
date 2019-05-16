@@ -24,6 +24,8 @@
 #include <unistd.h>
 
 using std::strchr;
+using std::string;
+using std::vector;
 
 //version 4  -- multi-block support in a single file
 //version 4a -- streaming validation + quiet mode
