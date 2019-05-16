@@ -211,7 +211,7 @@ public:
 
 				//Buffer is now empty -- refill next call
 				this->index = this->length = 0;
-				
+
 				return bytesRead;
 			}
 
@@ -258,7 +258,7 @@ public:
 		if (is_gz_file) {
 			if (!this->gzFp)
 				return 0;
-		} else if (!this->fp){			
+		} else if (!this->fp){
 			return 0;
 		}
 
@@ -284,7 +284,7 @@ public:
 				bytes_read = gzread(this->gzFp, tempBlock, BLOCK_SIZE);
 			} else {
 				bytes_read = fread(tempBlock, 1, BLOCK_SIZE, this->fp);
-			}		
+			}
 			advanced += bytes_read;
 			size -= bytes_read;
 		}
@@ -297,7 +297,7 @@ public:
 			advanced += fread(tempBlock, 1, size, this->fp);
 			this->bEOF = feof(this->fp) != 0;
 		}
-		
+
 		return advanced;
 	}
 

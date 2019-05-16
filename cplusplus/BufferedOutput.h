@@ -263,7 +263,7 @@ extern int compareByOutputIndex(const void * first, const void * second);
 class BufferedOutputInMem
 {
 public:
-	
+
 	BufferedOutputInMem(size_t neededBufferSize, bool bUseInternalBuffer=true)
 		: ppBuffer(NULL)
 		, pBuffer(NULL)
@@ -333,7 +333,7 @@ public:
 
 		this->numColumns = validNumColumns;
 		this->pColumnsBuffer = new const char*[validNumColumns];
-				
+
 		this->bNeedReorder = true;
 		return true;
 	}
@@ -341,7 +341,7 @@ public:
 	bool write(const void* data, const size_t size) {
 		assert(ppBuffer || bUseInternalBuffer);
 		assert(pBuffer);
-		
+
 		//Add data to current column value.
 		memcpy(this->pBuffer + this->index, data, size);
 		this->index += size;
