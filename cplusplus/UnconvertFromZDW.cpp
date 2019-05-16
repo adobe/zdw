@@ -83,11 +83,11 @@ namespace {
 	    return !filename.empty() ? filename : string("stdin");
     }
 
- /* 
+ /*
   * In: inFileName
   * Out: sourceDir & basename (a pointer into the allocated sourceDir buffer)
   * The caller needs to free the memory pointed to by sourceDir, after all references to basename.
-  */	 
+  */
 	void InitDirAndBasenameFromFileName(string const& inFileNameStr, char * &sourceDir, const char* &basename)
 	{
 		char *filestub_local = NULL;
@@ -193,7 +193,7 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 				//Internal uncompression of .gz files.
 				input = new BufferedInput(inFileName.c_str(), 16*1024, true);
 				return;
-			} 
+			}
 			if (len >= 5 && !strcmp(inFileName.c_str() + len - 4, ".bz2")) {
 				//Streaming uncompression of .bz2 files.
 				cmd = "bzip2 -d --stdout ";
@@ -411,7 +411,7 @@ bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
 }
 
 bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
-	const vector<string> &csv_vector, 
+	const vector<string> &csv_vector,
 	ZDW::COLUMN_INCLUSION_RULE inclusionRule)
 {
 	this->namesOfColumnsToOutput.clear(); //start empty
@@ -524,12 +524,12 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::GetSchema(
 }
 
 string UnconvertFromZDW_Base::GetBaseNameForInFile(const string &inFileName) {
-	
+
 	if (inFileName.empty()) {
 		//return "No Input Filename Found";
 		return string();
 	}
-	
+
 	char *sourceDir = NULL;
 	const char* outputBasename = NULL;
 	InitDirAndBasenameFromFileName(inFileName, sourceDir, outputBasename);
@@ -936,7 +936,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 	}
 
 	this->numColumnsInExportFile = this->columnNames.size();
-	
+
 	// 3b Detour To Start Setup For Virtual Columns (i.e. VIRTUAL_EXPORT_FILE_BASENAME, VIRTUAL_EXPORT_ROW_COLUMN_NAME)
 	if (UseVirtualExportBaseNameColumn()) {
 		this->indexForVirtualBaseNameColumn = this->columnNames.size();
@@ -1038,9 +1038,9 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 		this->columnCharSize = new USHORT[this->numColumns];
 		readBytes(this->columnCharSize, this->numColumnsInExportFile * 2);
 	}
-	
+
 	// 5. Finish Setup For Virtual Columns (i.e. VIRTUAL_EXPORT_FILE_BASENAME)
-	
+
 	if (UseVirtualExportBaseNameColumn()) {
 		this->columnType[this->indexForVirtualBaseNameColumn] = VIRTUAL_EXPORT_FILE_BASENAME;
 		if (this->columnCharSize) {
@@ -1696,7 +1696,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(char ** buffer,
 					{
 						this->pBufferedOutput->setOutputBuffer(buffer, size);
 					}
-					
+
 					this->pBufferedOutput->setOutputColumnPtrs(outColumns);
 					ERR_CODE eRet = readNextRow(*this->pBufferedOutput);
 					ERR_CODE eRetForNumColumns = this->getNumOutputColumns(numColumns);
@@ -1795,7 +1795,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::handleZDWParseBlockHea
 		if (!bRes)
 			return BAD_REQUESTED_COLUMN; //column ordering is bad -- don't attempt to process further.
 	}
-	
+
 	setState(ZDW_GET_NEXT_ROW);
 	return OK;
 }

@@ -128,11 +128,10 @@ protected:
 	size_t skipBytes(const size_t len);
 	char* GetWord(ULONG index, char* row);
 
-	
 	static string GetBaseNameForInFile(const std::string &inFileName);
 	bool UseVirtualExportBaseNameColumn() const;
 	void EnableVirtualExportBaseNameColumn();
-	
+
 	bool UseVirtualExportRowColumn() const;
 	void EnableVirtualExportRowColumn();
 
