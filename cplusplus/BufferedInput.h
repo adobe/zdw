@@ -191,7 +191,7 @@ public:
 
 				//Prepare to fill the output buffer with more data.
 				size -= bytesInBuffer;
-				data = (char*)data + bytesInBuffer;
+				data = static_cast<char*>(data) + bytesInBuffer;
 				bytesRead = bytesInBuffer;
 			}
 

@@ -407,7 +407,7 @@ ConvertToZDW::INPUT_STATUS ConvertToZDW::parseInput(FILE* in)
 //Returns: number of columns with non-default values.
 size_t ConvertToZDW::writeLookupColumnStats(FILE* out, const size_t numColumns)
 {
-	const char offsetSize = (char)this->uniques.getBytesInOffset();
+	const char offsetSize = static_cast<char>(this->uniques.getBytesInOffset());
 
 	ULONGLONG *usedColumnMin = new ULONGLONG[numColumns];
 
@@ -754,7 +754,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 			//Open a temp file in the output dir in order to store
 			//the data being streamed in for the second read pass.
 			assert(!this->tmp_fp);
-			tmp_filename = (char*)malloc(strlen(zdwFile)+20);
+			tmp_filename = static_cast<char*>(malloc(strlen(zdwFile)+20));
 			sprintf(tmp_filename, "%s.tmp.%d.gz", outfile_basepath.c_str(), file_pieces);
 			string cmd = "gzip > "; //compress the data to reduce disk writes
 			cmd += tmp_filename;
@@ -867,7 +867,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	if(bValidate)
 	{
 		//Ensure the ZDW file's output is identical to the input data.
-		assert(tmp_filenames.size() == (size_t)file_pieces); //if we're storing temp files, we need to validate against them all
+		assert(tmp_filenames.size() == static_cast<size_t>(file_pieces)); //if we're storing temp files, we need to validate against them all
 		const ERR_CODE eValid = validate(temp_outfile_name.c_str(), tmp_filenames, exeName, outputDir);
 
 		if(eValid == OK)

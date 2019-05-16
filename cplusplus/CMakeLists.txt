@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 project(zdw)
 
-add_definitions(-D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS -Wall)
+add_definitions(-D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS -Wall -Wold-style-cast)
 
 add_library(zdw
 	UnconvertFromZDW.cpp

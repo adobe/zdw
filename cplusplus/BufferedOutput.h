@@ -135,7 +135,7 @@ public:
 				str.append(1, '\t'); //force column separators to be tabs for now
 			colBuf->print(str);
 		}
-		str.append((const char*)data, size); //append the endline chars
+		str.append(static_cast<const char*>(data), size); //append the endline chars
 		return (fwrite(str.c_str(), str.size(), 1, this->fp) == 1);
 	}
 
