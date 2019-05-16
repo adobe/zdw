@@ -14,11 +14,13 @@
 
 int compareByIndex(const void * first, const void * second)
 {
-	return (*(OutputOrderIndexer *)first).index - (*(OutputOrderIndexer *)second).index;
+	return (reinterpret_cast<const OutputOrderIndexer *>(first))->index
+			- (reinterpret_cast<const OutputOrderIndexer *>(second))->index;
 }
 
 int compareByOutputIndex(const void * first, const void * second)
 {
-	return (*(OutputOrderIndexer *)first).outputIndex - (*(OutputOrderIndexer *)second).outputIndex;
+	return (reinterpret_cast<const OutputOrderIndexer *>(first))->outputIndex
+			- (reinterpret_cast<const OutputOrderIndexer *>(second))->outputIndex;
 }
 
