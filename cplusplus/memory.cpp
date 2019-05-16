@@ -23,29 +23,29 @@ float Memory::memory_threshold_mb = DEFAULT_PROCESS_MEMORY_THRESHOLD;
 //Returns: allocated memory, in MB
 double Memory::process_memory_usage()
 {
-    double vm_usage = 0.0;
+	double vm_usage = 0.0;
 
-    string pid, comm, state, ppid, pgrp, session, tty_nr, tpgid, flags;
-    string minflt, cminflt, majflt, cmajflt, utime, stime, cutime, cstime;
-    string priority, nice, O, itrealvalue, starttime;
+	string pid, comm, state, ppid, pgrp, session, tty_nr, tpgid, flags;
+	string minflt, cminflt, majflt, cmajflt, utime, stime, cutime, cstime;
+	string priority, nice, O, itrealvalue, starttime;
 
-    unsigned long long vsize;
+	unsigned long long vsize;
 
-    std::ifstream stat_stream("/proc/self/stat");
+	std::ifstream stat_stream("/proc/self/stat");
 
-    if(stat_stream.good())
-    {
-        stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >>tty_nr
-            >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
-            >> utime >> stime >> cutime >> cstime >> priority >> nice
-            >> O >> itrealvalue >> starttime >> vsize;
+	if (stat_stream.good())
+	{
+		stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >>tty_nr
+			>> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
+			>> utime >> stime >> cutime >> cstime >> priority >> nice
+			>> O >> itrealvalue >> starttime >> vsize;
 
-        stat_stream.close();
+		stat_stream.close();
 
-        vm_usage = vsize / (1024.0 * 1024.0); //bytes --> MB
-    }
+		vm_usage = vsize / (1024.0 * 1024.0); //bytes --> MB
+	}
 
-    return vm_usage;
+	return vm_usage;
 }
 
 float Memory::get_memory_usage_limit_MB()

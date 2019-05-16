@@ -81,9 +81,9 @@ int unsigned ConvertToZDW::ReadDescFile(FILE* f)
 	this->columnCharSize.clear();
 	m_ColumnType.reserve(MAX_EXPECTED_COLUMNS);
 	this->columnCharSize.reserve(MAX_EXPECTED_COLUMNS);
-	while(fgets(row, MAX_DESC_LINE_LENGTH, f))
+	while (fgets(row, MAX_DESC_LINE_LENGTH, f))
 	{
-		if(!strncasecmp(row, "Field", 5))
+		if (!strncasecmp(row, "Field", 5))
 			continue;
 
 		tab = strchr(row, '\t');
@@ -95,44 +95,44 @@ int unsigned ConvertToZDW::ReadDescFile(FILE* f)
 		this->columnCharSize.push_back(0); //default: don't care
 
 		++tab;
-		if(!strncmp(tab, "varchar", 7)) {
-			const int char_size = atoi(tab+8);
+		if (!strncmp(tab, "varchar", 7)) {
+			const int char_size = atoi(tab + 8);
 			m_ColumnType.push_back(VARCHAR);
 			this->columnCharSize.back() = char_size;
 		}
-		else if(!strncmp(tab, "char", 4))
+		else if (!strncmp(tab, "char", 4))
 		{
-			const int char_size = atoi(tab+5);
-			if(char_size == 1)
+			const int char_size = atoi(tab + 5);
+			if (char_size == 1)
 				m_ColumnType.push_back(CHAR);
-			else if(char_size == 2)
+			else if (char_size == 2)
 				m_ColumnType.push_back(CHAR_2);
 			else
 				m_ColumnType.push_back(VARCHAR); //don't care about representing the size of this char(x) field precisely
 			this->columnCharSize.back() = char_size;
 		}
-		else if(!strncmp(tab, "text", 4))
+		else if (!strncmp(tab, "text", 4))
 			m_ColumnType.push_back(TEXT);
-		else if(!strncmp(tab, "tinytext", 8))
+		else if (!strncmp(tab, "tinytext", 8))
 			m_ColumnType.push_back(TINYTEXT);
-		else if(!strncmp(tab, "mediumtext", 10))
+		else if (!strncmp(tab, "mediumtext", 10))
 			m_ColumnType.push_back(MEDIUMTEXT);
-		else if(!strncmp(tab, "longtext", 8))
+		else if (!strncmp(tab, "longtext", 8))
 			m_ColumnType.push_back(LONGTEXT);
-		else if(!strncmp(tab, "datetime", 8))
+		else if (!strncmp(tab, "datetime", 8))
 			m_ColumnType.push_back(DATETIME);
-		else if(!strncmp(tab, "decimal", 7) || !strncmp(tab+1, "decimal", 7))
+		else if (!strncmp(tab, "decimal", 7) || !strncmp(tab + 1, "decimal", 7))
 			m_ColumnType.push_back(DECIMAL);
 		else {
 			//Numeric values.
 			//Look for "unsigned" (ver6+).
 			const bool bSigned = (strstr(tab, "unsigned") == NULL);
 
-			if(!strncmp(tab, "tinyint", 7))
+			if (!strncmp(tab, "tinyint", 7))
 				m_ColumnType.push_back(bSigned ? TINY_SIGNED : TINY);
-			else if(!strncmp(tab, "smallint", 8))
+			else if (!strncmp(tab, "smallint", 8))
 				m_ColumnType.push_back(bSigned ? SHORT_SIGNED : SHORT);
-			else if(!strncmp(tab, "bigint", 6))
+			else if (!strncmp(tab, "bigint", 6))
 				m_ColumnType.push_back(bSigned ? LONGLONG_SIGNED : LONGLONG);
 			else
 				m_ColumnType.push_back(bSigned ? LONG_SIGNED : LONG);
@@ -159,10 +159,10 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 	//Call unconvertDWfile at the same path location where this app was invoked.
 	string zdw_path = exeName;
 	//Strip the binary name off (everything after the final /).
-	const char *pos = exeName + strlen(exeName);  //start from end...
+	const char* pos = exeName + strlen(exeName);  //start from end...
 	while (pos > exeName && pos[-1] != '/') //...and look backwards
 		--pos;
-	zdw_path.resize(pos-exeName);
+	zdw_path.resize(pos - exeName);
 	//Stream ZDW output to validation process.
 	string zdw_cmd = zdw_path + "unconvertDWfile -q - ";
 
@@ -179,7 +179,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 	if (this->bStreamingInput) {
 		//Stream from the series of .gz temp files.
 		string zcat_str = "zcat ";
-		for (size_t i=0; i<src_filenames.size(); ++i) {
+		for (size_t i = 0; i < src_filenames.size(); ++i) {
 			zcat_str += src_filenames[i];
 			zcat_str += " ";
 		}
@@ -207,18 +207,18 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 inline void get_next_column(char*& col)
 {
 	col = strchr(col, '\t'); // embedded tabs are escaped by an odd number of backslashes.
-	if(col && col[-1] == '\\')
+	if (col && col[-1] == '\\')
 	{
 		char* slash = col - 2;
-		while(*slash == '\\')
+		while (*slash == '\\')
 			--slash;
-		while(col && ((col - slash) % 2) == 0)
+		while (col && ((col - slash) % 2) == 0)
 		{
-			col = strchr(col+1, '\t');
-			if(col)
+			col = strchr(col + 1, '\t');
+			if (col)
 			{
 				slash = col - 1;
-				while(*slash == '\\')
+				while (*slash == '\\')
 					--slash;
 			}
 		}
@@ -227,10 +227,10 @@ inline void get_next_column(char*& col)
 
 inline bool dump_trimmed_row_to_temp_file(FILE* fp, const vector<char*>& rowColumns)
 {
-	const int size_minus_one = rowColumns.size()-1;
+	const int size_minus_one = rowColumns.size() - 1;
 	char *field;
 	size_t len;
-	for (int i=0; i<size_minus_one; ++i) {
+	for (int i = 0; i < size_minus_one; ++i) {
 		field = rowColumns[i];
 		len = strlen(field);
 		if (len > 0 && fwrite(field, 1, len, fp) != len)
@@ -254,7 +254,7 @@ size_t ConvertToZDW::GetDataRow(
 {
 	rowColumns.clear();
 
-	if(Common::GetNextRow(f, row, m_LongestLine))
+	if (Common::GetNextRow(f, row, m_LongestLine))
 	{
 		//If we're streaming data in, store this data to a temp file
 		if (this->tmp_fp &&
@@ -269,11 +269,11 @@ size_t ConvertToZDW::GetDataRow(
 		}
 
 		char *col = row, *temp;
-		while(col)
+		while (col)
 		{
 			rowColumns.push_back(col);
 			get_next_column(col);
-			if(col) // replace the tab with an end of string null
+			if (col) // replace the tab with an end of string null
 			{
 				*col = 0;
 				++col;
@@ -317,16 +317,16 @@ ConvertToZDW::INPUT_STATUS ConvertToZDW::parseInput(FILE* in)
 	bool hadEnoughMemory = true;
 	size_t n;
 	const size_t numColumns = m_ColumnType.size();
-	while(hadEnoughMemory && (n = GetDataRow(in, m_row, this->rowColumns)))
+	while (hadEnoughMemory && (n = GetDataRow(in, m_row, this->rowColumns)))
 	{
 		if (n != numColumns)
 			return IS_WRONG_NUM_OF_COLUMNS_ON_A_ROW;
-		for(size_t c = 0; hadEnoughMemory && c < n; ++c)
+		for (size_t c = 0; hadEnoughMemory && c < n; ++c)
 		{
-			if(!this->rowColumns[c][0])
+			if (!this->rowColumns[c][0])
 				continue; //skip empty values
 
-			switch(m_ColumnType[c])
+			switch (m_ColumnType[c])
 			{
 				case DECIMAL:
 				case VARCHAR:
@@ -345,13 +345,13 @@ ConvertToZDW::INPUT_STATUS ConvertToZDW::parseInput(FILE* in)
 					val = this->rowColumns[c][0];
 					if (this->rowColumns[c][0] == '\\') //include escaped chars verbatim
 						val += (this->rowColumns[c][1] * 256);
-					if(val > 0)
+					if (val > 0)
 					{
-						if(minmaxset[c])
+						if (minmaxset[c])
 						{
-							if(val > columnMax[c])
+							if (val > columnMax[c])
 								columnMax[c] = val;
-							else if(val < columnMin[c])
+							else if (val < columnMin[c])
 								columnMin[c] = val;
 						}
 						else
@@ -371,13 +371,13 @@ ConvertToZDW::INPUT_STATUS ConvertToZDW::parseInput(FILE* in)
 					//when gathering the range (though it is technically inaccurate).
 					ULONGLONG& val = columnVal[c];
 					val = strtoull(this->rowColumns[c], NULL, 10);
-					if(val > 0)
+					if (val > 0)
 					{
-						if(minmaxset[c])
+						if (minmaxset[c])
 						{
-							if(val > columnMax[c])
+							if (val > columnMax[c])
 								columnMax[c] = val;
-							else if(val < columnMin[c])
+							else if (val < columnMin[c])
 								columnMin[c] = val;
 						}
 						else
@@ -391,10 +391,10 @@ ConvertToZDW::INPUT_STATUS ConvertToZDW::parseInput(FILE* in)
 				default: assert(!"Unrecognized column type"); break;
 			}
 		}
-		if(hadEnoughMemory)
+		if (hadEnoughMemory)
 		{
 			++this->numRows;
-			if(!(this->numRows % 10000) && !this->bQuiet)
+			if (!(this->numRows % 10000) && !this->bQuiet)
 			{
 				printf("\r%u rows", this->numRows);
 				fflush(stdout);
@@ -414,9 +414,9 @@ size_t ConvertToZDW::writeLookupColumnStats(FILE* out, const size_t numColumns)
 	//Determine size of columns in this block.  If column is empty, mark it unused.
 	size_t numColumnsUsed = 0;
 	ULONGLONG val;
-	for(size_t c = 0; c < numColumns; ++c)
+	for (size_t c = 0; c < numColumns; ++c)
 	{
-		if(!minmaxset[c])
+		if (!minmaxset[c])
 		{
 			//column empty everywhere
 			columnSize[c] = 0;
@@ -424,7 +424,7 @@ size_t ConvertToZDW::writeLookupColumnStats(FILE* out, const size_t numColumns)
 			continue;
 		}
 
-		switch(m_ColumnType[c])
+		switch (m_ColumnType[c])
 		{
 			default: assert(!"Unrecognized type"); break;
 			case VARCHAR:
@@ -448,7 +448,7 @@ size_t ConvertToZDW::writeLookupColumnStats(FILE* out, const size_t numColumns)
 				//Determine # of bytes required to store this value.
 				val = columnMax[c] - columnMin[c];
 				columnSize[c] = 1;
-				while(val >= 256)
+				while (val >= 256)
 				{
 					++columnSize[c];
 					val /= 256;
@@ -492,21 +492,21 @@ ULONG ConvertToZDW::writeBlockRows(
 	unsigned char *setColumns = new unsigned char[numSetColumnBytes];
 
 	//Use default values of 0 for the previous row check.
-	for (k=0; k<numColumns; ++k)
+	for (k = 0; k < numColumns; ++k)
 		this->columnStoredVal[0][k].n = 0;
 
 	//Each iteration writes out one row for this block.
 	ULONG cnt = 0;
-	while(cnt < this->numRows && GetDataRow(in, m_row, this->rowColumns) > 0)
+	while (cnt < this->numRows && GetDataRow(in, m_row, this->rowColumns) > 0)
 	{
 		ULONG p = 0;
 		memset(setColumns, 0, numSetColumnBytes);
 
-		for(u = 0; u < numColumnsUsed; u++)
+		for (u = 0; u < numColumnsUsed; u++)
 		{
 			c = usedColumn[u];
 			storageBytes& storedVal = this->columnStoredVal[r][c];
-			switch(m_ColumnType[c])
+			switch (m_ColumnType[c])
 			{
 				case VARCHAR:
 				case TEXT:
@@ -516,15 +516,15 @@ ULONG ConvertToZDW::writeBlockRows(
 				case DATETIME:
 				case CHAR_2:
 				case DECIMAL:
-					if(this->rowColumns[c][0])
+					if (this->rowColumns[c][0])
 						storedVal.n = this->uniques.getOffset(this->rowColumns[c]); // - columnMin[c]; -- now hardcoded to 0
 					else
 						storedVal.n = 0;
-					if(columnStoredVal[0][c].n != columnStoredVal[1][c].n)
+					if (columnStoredVal[0][c].n != columnStoredVal[1][c].n)
 					{
 						b = 1u << (u % 8);
 						setColumns[u / 8] |= b;
-						for(j = 0; j < columnSize[c]; j++)
+						for (j = 0; j < columnSize[c]; j++)
 						{
 							rowIndexOut[p++] = storedVal.c[j];
 						}
@@ -536,11 +536,11 @@ ULONG ConvertToZDW::writeBlockRows(
 						storedVal.n += this->rowColumns[c][1] * 256; //will either be NULL or an escaped char
 						storedVal.n -= columnMin[c];
 					}
-					if(columnStoredVal[0][c].n != columnStoredVal[1][c].n)
+					if (columnStoredVal[0][c].n != columnStoredVal[1][c].n)
 					{
 						b = 1u << (u % 8);
 						setColumns[u / 8] |= b;
-						for(j = 0; j < columnSize[c]; j++)
+						for (j = 0; j < columnSize[c]; j++)
 						{
 							rowIndexOut[p++] = storedVal.c[j];
 						}
@@ -553,13 +553,13 @@ ULONG ConvertToZDW::writeBlockRows(
 					//Signed values can be stored as unsigned values
 					//as long as we flag to unpack them correctly.
 					storedVal.n = strtoull(this->rowColumns[c], NULL, 10);
-					if(storedVal.n > 0)
+					if (storedVal.n > 0)
 						storedVal.n -= columnMin[c];
-					if(columnStoredVal[0][c].n != columnStoredVal[1][c].n)
+					if (columnStoredVal[0][c].n != columnStoredVal[1][c].n)
 					{
 						b = 1u << (u % 8);
 						setColumns[u / 8] |= b;
-						for(j = 0; j < columnSize[c]; j++)
+						for (j = 0; j < columnSize[c]; j++)
 						{
 							rowIndexOut[p++] = storedVal.c[j];
 						}
@@ -583,7 +583,7 @@ ULONG ConvertToZDW::writeBlockRows(
 		r = (r ? 0 : 1);
 
 		cnt++;
-		if(!(cnt % 10000) && !this->bQuiet)
+		if (!(cnt % 10000) && !this->bQuiet)
 		{
 			printf("\r%u", cnt);
 			fflush(stdout);
@@ -651,7 +651,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	cmd += " > ";
 	cmd += temp_outfile_name;
 	FILE *out = popen(cmd.c_str(), "w");
-	if(!out)
+	if (!out)
 	{
 		fprintf(stderr, "Could not open the process '%s' for writing!\n", cmd.c_str());
 		return FILE_CREATION_ERR;
@@ -667,14 +667,14 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		//i.e. null-terminated strings, followed by a null character, signifying the end of the column names
 		{
 			int unsigned c, n;
-			for(n=0, c=0; c < numColumns; c++) {
+			for (n = 0, c = 0; c < numColumns; c++) {
 				n += m_DWColumns[c].length() + 1; // we want the null character left at the end of each column name.
 			}
-			char *line = new char[n+1];
+			char *line = new char[n + 1];
 
-			for(n=0, c=0; c < numColumns; c++)
+			for (n = 0, c = 0; c < numColumns; c++)
 			{
-				strcpy(line+n, m_DWColumns[c].c_str());
+				strcpy(line + n, m_DWColumns[c].c_str());
 				n += m_DWColumns[c].length() + 1; //skip over null char
 			}
 			line[n++] = 0;
@@ -685,7 +685,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		//Write the column types as a byte vector of enumerated values.
 		{
 			char unsigned *temp = new char unsigned[numColumns];
-			for (int unsigned k=0; k<numColumns; ++k)
+			for (int unsigned k = 0; k < numColumns; ++k)
 				temp[k] = m_ColumnType[k];
 			assert(sizeof(char unsigned) == 1);
 			fwrite(temp, 1, numColumns, out);
@@ -696,7 +696,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		//Used for outputting an accurate table schema description.
 		{
 			short unsigned *temp = new USHORT[numColumns];
-			for (int unsigned k=0; k<numColumns; ++k)
+			for (int unsigned k = 0; k < numColumns; ++k)
 				temp[k] = static_cast<USHORT>(this->columnCharSize[k]);
 			fwrite(temp, 2, numColumns, out);
 			delete[] temp;
@@ -712,13 +712,13 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	//the the current block will be written to the output file,
 	//and the process will repeat with a fresh block
 	//until the input file has been completely parsed.
-	ULONG cnt=0, totalCnt=0;
+	ULONG cnt = 0, totalCnt = 0;
 	ERR_CODE res = OK;
 	bool hadEnoughMemory = true;
 
 	//Maintain a list of the input files/blocks for later validation.
 	vector<string> tmp_filenames; //for validation of data that was streamed in
-	int file_pieces=0, blocks=0;
+	int file_pieces = 0, blocks = 0;
 	if (!this->bStreamingInput) {
 		//There is only one input file -- indicate it here.
 		string src_filename = filestub;
@@ -754,7 +754,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 			//Open a temp file in the output dir in order to store
 			//the data being streamed in for the second read pass.
 			assert(!this->tmp_fp);
-			tmp_filename = static_cast<char*>(malloc(strlen(zdwFile)+20));
+			tmp_filename = static_cast<char*>(malloc(strlen(zdwFile) + 20));
 			sprintf(tmp_filename, "%s.tmp.%d.gz", outfile_basepath.c_str(), file_pieces);
 			string cmd = "gzip > "; //compress the data to reduce disk writes
 			cmd += tmp_filename;
@@ -769,12 +769,12 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		}
 
 		inputStatus = parseInput(f_in);
-		switch(inputStatus)
+		switch (inputStatus)
 		{
 			case IS_DONE: hadEnoughMemory = true; break;
 			case IS_NOT_ENOUGH_MEMORY: hadEnoughMemory = false; break;
 			case IS_WRONG_NUM_OF_COLUMNS_ON_A_ROW:
-				fprintf(stderr,"\nRow %u had the problem\n", this->numRows+1); //one past the last good row
+				fprintf(stderr, "\nRow %u had the problem\n", this->numRows + 1); //one past the last good row
 				return WRONG_NUM_OF_COLUMNS_ON_A_ROW;
 		}
 		if (this->bStreamingInput) {
@@ -787,14 +787,14 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		if (!this->bQuiet)
 			printf("\r%u rows\n", this->numRows);
 
-		if(!this->numRows)
+		if (!this->numRows)
 		{
 			if (hadEnoughMemory)
 			{
 				assert(!totalCnt); //this should be during the first block
-				fprintf(stderr,"Empty data file -- nothing to process\n");
+				fprintf(stderr, "Empty data file -- nothing to process\n");
 			} else {
-				fprintf(stderr,"Not enough memory to run %s\n", exeName);
+				fprintf(stderr, "Not enough memory to run %s\n", exeName);
 				res = OUT_OF_MEMORY;
 				goto Done;
 			}
@@ -858,19 +858,19 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 			++file_pieces;
 		}
 		total_rows += this->numRows;
-	} while(!hadEnoughMemory);
+	} while (!hadEnoughMemory);
 
 	//Done writing out the ZDW file.
 	pclose(out);
 	out = NULL;
 
-	if(bValidate)
+	if (bValidate)
 	{
 		//Ensure the ZDW file's output is identical to the input data.
 		assert(tmp_filenames.size() == static_cast<size_t>(file_pieces)); //if we're storing temp files, we need to validate against them all
 		const ERR_CODE eValid = validate(temp_outfile_name.c_str(), tmp_filenames, exeName, outputDir);
 
-		if(eValid == OK)
+		if (eValid == OK)
 		{
 			if (!this->bQuiet)
 				printf("%s GOOD\n", zdwFile);
@@ -888,7 +888,7 @@ Done:
 		pclose(out);
 	//Delete the temp files created during streaming input.
 	if (this->bStreamingInput) {
-		for (size_t i=0; i<tmp_filenames.size(); ++i)
+		for (size_t i = 0; i < tmp_filenames.size(); ++i)
 			unlink(tmp_filenames[i].c_str());
 	}
 
@@ -942,7 +942,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	//Input is an .sql dump file.
 	strcpy(filestub, infile);
 	char* pos = strstr(filestub, ".sql");
-	if(pos) {
+	if (pos) {
 		*pos = 0;
 	} else {
 		return MISSING_SQL_FILE;
@@ -951,7 +951,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	//Read .desc file.
 	sprintf(command, "%s.desc.%s", filestub, getInputFileExtension());
 	in = fopen(command, "r");
-	if(!in)
+	if (!in)
 		return MISSING_DESC_FILE;
 
 	const int unsigned numColumns = ReadDescFile(in);
@@ -978,7 +978,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	} else {
 		sprintf(command, "%s.%s", filestub, getInputFileExtension());
 		in = fopen(command, "r");
-		if(!in)
+		if (!in)
 			return MISSING_SQL_FILE; //couldn't read file
 	}
 

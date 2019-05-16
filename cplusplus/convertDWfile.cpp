@@ -31,7 +31,7 @@ void showVersion()
 void usage(const char* executable)
 {
 	const char* exe = strrchr(executable, '/');
-	if(exe)
+	if (exe)
 		++exe; //skip '/'
 	else
 		exe = executable;
@@ -84,7 +84,7 @@ int badParam(const char* exeName, const char* paramStr)
 
 int main(int argc, char* argv[])
 {
-	const char *program = argv[0];
+	const char* program = argv[0];
 	if (argc < 2)
 	{
 		ShowHelp(program);
@@ -98,17 +98,17 @@ int main(int argc, char* argv[])
 	bool validate = false;
 	bool bQuiet = false;
 	ConvertToZDW::Compressor compressor = ConvertToZDW::GZIP;
-	const char *pOutputDir = NULL; //default = current dir
-	const char *zArgs = NULL;
+	const char* pOutputDir = NULL; //default = current dir
+	const char* zArgs = NULL;
 
 	//Parse flags.
 	int i;
 	int filenum = 0;
-	for(i = 1; i < argc; i++)
+	for (i = 1; i < argc; i++)
 	{
-		if(argv[i][0] == '-')
+		if (argv[i][0] == '-')
 		{
-			switch(argv[i][1])
+			switch (argv[i][1])
 			{
 				case 'b': compressor = ConvertToZDW::BZIP2; break;
 				case 'J': compressor = ConvertToZDW::XZ;    break;
@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 				case 'v': validate = true; break;
 				case '-': //i.e., '--[text]'
 					{
-						const char* flag = argv[i]+2;
+						const char* flag = argv[i] + 2;
 						if (!strcmp(flag, "help"))
 						{
 							ShowHelp(program);
@@ -138,12 +138,12 @@ int main(int argc, char* argv[])
 							return ConvertToZDW::OK;
 						}
 						if (!strncmp(flag, "mem-limit=", 10)) {
-							if (!Memory::set_memory_threshold_MB(atof(flag+10)))
+							if (!Memory::set_memory_threshold_MB(atof(flag + 10)))
 								return badParam(program, argv[i]);
 							break;
 						}
 						if (!strncmp(flag, "zargs=", 6)) {
-							zArgs = flag+6;
+							zArgs = flag + 6;
 							break;
 						}
 					}
@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
 
 	//Parse files.
 	filenum = 0;
-	for(i = 1; i < argc; i++)
+	for (i = 1; i < argc; i++)
 	{
 		if (argv[i][0] == '-')
 		{
@@ -198,9 +198,9 @@ int main(int argc, char* argv[])
 				}
 				iRet = ConvertToZDW::CONVERSION_FAILED; //to preserve existing error code API?
 			}
-			if(removeOldFiles)
+			if (removeOldFiles)
 			{
-				if(res != ConvertToZDW::OK)
+				if (res != ConvertToZDW::OK)
 				{
 					fprintf(stderr, "Could not remove original %s file because conversion was not good\n", filestub);
 				}

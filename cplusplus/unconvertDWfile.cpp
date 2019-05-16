@@ -34,7 +34,7 @@ void showVersion()
 void usage(char* executable)
 {
 	char* exe = strrchr(executable, '/');
-	if(exe)
+	if (exe)
 		++exe; //skip '/'
 	else
 		exe = executable;
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
 				case 'a':
 				case 'c':
 				case 'd':
-					if (argc <= i+1)
+					if (argc <= i + 1)
 						return missingParam(argv[0], argv[i]);
 				break;
 			}
@@ -242,7 +242,7 @@ int main(int argc, char* argv[])
 					specifiedDir = argv[++i];
 					//Cut off any trailing /
 					c = specifiedDir.size() - 1;
-					if(specifiedDir[c] == '/')
+					if (specifiedDir[c] == '/')
 						specifiedDir.resize(c);
 					break;
 				case 'i': //read from stdin and output to stdout
@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
 					break;
 				case '-': //i.e., '--[text]'
 					{
-						const char* flag = argv[i]+2;
+						const char* flag = argv[i] + 2;
 						if (strlen(flag) == 0) //"--" for outputting to stdout is deprecated
 							bStdout = true;
 						else if (!strcmp(flag, "help"))
@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
 				break;
 			}
 		} else {
-			if(argv[i][0] == '\0') {
+			if (argv[i][0] == '\0') {
 				return emptyFilename(argv[0]);
 			}
 			if (bStdin) {
