@@ -16,7 +16,6 @@
 #include <list>
 #include <cstring>
 
-using std::size_t;
 
 class StringHeap
 {

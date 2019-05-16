@@ -20,16 +20,14 @@
 #include <map>
 #include <string>
 
-using std::map;
-using std::string;
 
 //********************************************************
 struct cstringComp {
 	bool operator() (const char* const& lhs, const char* const& rhs) const { return std::strcmp(lhs,rhs) < 0; }
 };
 
-typedef map<const char*, ULONG, cstringComp> DictionaryT;
-//typedef map<string, ULONG> DictionaryT; //replaced with custom memory management
+typedef std::map<const char*, ULONG, cstringComp> DictionaryT;
+//typedef std::map<std::string, ULONG> DictionaryT; //replaced with custom memory management
 
 //********************************************************
 class Dictionary

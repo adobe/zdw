@@ -25,10 +25,6 @@
 
 #include <boost/scoped_ptr.hpp>
 
-using std::vector;
-using std::string;
-using std::ostream;
-
 
 namespace ZDW {
 	//Error codes
@@ -102,7 +98,7 @@ public:
 	virtual ~UnconvertFromZDW_Base();
 
 	//Common API.
-	vector<string> getColumnNames() const {return this->columnNames;}
+	std::vector<std::string> getColumnNames() const {return this->columnNames;}
 	UCHAR* getColumnTypes() const {return this->columnType;}
 	ULONG getRowsRead() const {return this->rowsRead;} //in current block
 	ULONG getNumLines() const {return this->numLines;} //in current block
@@ -110,25 +106,25 @@ public:
 	bool isFinished() const {return this->input->eof();}
 	bool isReadOpen() const {return this->input && this->input->is_open();}
 
-	static void printError(const std::string &exeName, const string &inFileName);
+	static void printError(const std::string &exeName, const std::string &inFileName);
 
 	ERR_CODE readHeader();
-	bool setNamesOfColumnsToOutput(const string& csv_str, ZDW::COLUMN_INCLUSION_RULE inclusionRule);
-	bool setNamesOfColumnsToOutput(const vector<string> &csv_vector, ZDW::COLUMN_INCLUSION_RULE inclusionRule);
+	bool setNamesOfColumnsToOutput(const std::string& csv_str, ZDW::COLUMN_INCLUSION_RULE inclusionRule);
+	bool setNamesOfColumnsToOutput(const std::vector<std::string> &csv_vector, ZDW::COLUMN_INCLUSION_RULE inclusionRule);
 	void showBasicStatisticsOnly(bool bVal=true) {this->bShowBasicStatisticsOnly = bVal;}
 
-	ERR_CODE GetSchema(ostream& stream);
+	ERR_CODE GetSchema(std::ostream& stream);
 
 protected:
-	ERR_CODE outputDescToFile(const vector<string>& columnNames,
+	ERR_CODE outputDescToFile(const std::vector<std::string>& columnNames,
 		const char* outputDir, const char* filestub, const char* ext);
-	ERR_CODE outputDescToStdOut(const vector<string>& columnNames);
+	ERR_CODE outputDescToStdOut(const std::vector<std::string>& columnNames);
 
 	size_t readBytes(void* buf, const size_t len, const bool bHaltOnReadError=true);
 	size_t skipBytes(const size_t len);
 	char* GetWord(ULONG index, char* row);
 
-	static string GetBaseNameForInFile(const std::string &inFileName);
+	static std::string GetBaseNameForInFile(const std::string &inFileName);
 	bool UseVirtualExportBaseNameColumn() const;
 	void EnableVirtualExportBaseNameColumn();
 
@@ -143,8 +139,8 @@ protected:
 
 	ULONG exportFileLineLength;
 	ULONG virtualLineLength;
-	vector<char *> dictionary; //version 9+
-	vector<ULONG> dictionary_memblock_size;
+	std::vector<char *> dictionary; //version 9+
+	std::vector<ULONG> dictionary_memblock_size;
 	UniquesPart *uniques;  //version 1-8
 	VisitorPart *visitors; //version 1-7
 
@@ -163,7 +159,7 @@ protected:
 
 	std::string exeName;
 	const std::string inFileName;
-	const string inFileBaseName;
+	const std::string inFileBaseName;
 
 	BufferedInput *input;
 
@@ -172,18 +168,18 @@ protected:
 	const bool bTestOnly;          //if set, only validate that data appear to be good without unconverting
 	bool bShowBasicStatisticsOnly; //if set, show header statistics of data and exit
 	bool bFailOnInvalidColumns; //if invalid columns are supplied, do we error out?
-	std::map<string, int unsigned> namesOfColumnsToOutput;
+	std::map<std::string, int unsigned> namesOfColumnsToOutput;
 	bool bExcludeSpecifiedColumns; //if set, namesOfColumnsToOutput is an exclusion set, and not an inclusion set
 	bool bOutputEmptyMissingColumns; //if set, output an empty column
 
 	//Header info.
 	int indexForVirtualBaseNameColumn;
 	int indexForVirtualRowColumn;
-	vector<string> columnNames;
+	std::vector<std::string> columnNames;
 	UCHAR *columnType;    //column value representation (e.g. string, numeric, char)
 	USHORT *columnCharSize; //char size of field (where applicable)
 	int *outputColumns; //flags to indicate which columns to output (non-negative values), and in what order
-	std::map<int, string> blankColumnNames;
+	std::map<int, std::string> blankColumnNames;
 
 	//Used when unpacking a block.
 	UCHAR *columnSize, *setColumns;
@@ -217,11 +213,11 @@ private:
 	void readVisitorDictionary();
 	void readColumnFieldStats();
 
-	ERR_CODE outputDesc(const vector<string>& columnNames, FILE* out);
-	vector<string> getDesc(const vector<string>& columnNames,
-		const string& name_type_separator, const string& delimiter) const;
-	string getColumnDesc(const string& name, UCHAR type, size_t index,
-		const string& name_type_separator, const string& delimiter) const;
+	ERR_CODE outputDesc(const std::vector<std::string>& columnNames, FILE* out);
+	std::vector<std::string> getDesc(const std::vector<std::string>& columnNames,
+		const std::string& name_type_separator, const std::string& delimiter) const;
+	std::string getColumnDesc(const std::string& name, UCHAR type, size_t index,
+		const std::string& name_type_separator, const std::string& delimiter) const;
 
 	size_t currentRowNumber;
 };
@@ -293,8 +289,8 @@ public:
 	// Call getNumOutputColumns or getRow first to retrieve the actual value of line length
 	ULONG getLineLength() {return this->exportFileLineLength + this->virtualLineLength;}
 
-	void getColumnNamesVector(vector<string> &columnNamesVector);
-	bool hasColumnName(const string& name) const;
+	void getColumnNamesVector(std::vector<std::string> &columnNamesVector);
+	bool hasColumnName(const std::string& name) const;
 
 	//output desc.sql file to {outputDir} directory
 	bool OutputDescToFile(const std::string &outputDir);

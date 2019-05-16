@@ -17,8 +17,7 @@
 
 #include <string>
 #include <vector>
-using std::string;
-using std::vector;
+
 
 //************************************************
 class ConvertToZDW
@@ -116,7 +115,7 @@ private:
 	}
 
 
-	size_t GetDataRow(FILE* f, char *&row, vector<char*>& rowColumns);
+	size_t GetDataRow(FILE* f, char *&row, std::vector<char*>& rowColumns);
 	ULONG writeBlockRows(FILE* in, FILE* out,
 		const size_t numColumns, const size_t numColumnsUsed);
 	size_t writeLookupColumnStats(FILE* out, const size_t numColumns);
@@ -133,14 +132,14 @@ private:
 			const bool bValidate, const char* exeName, const char* outputDir=NULL, const char* zArgs=NULL);
 	int unsigned ReadDescFile(FILE* f);
 
-	ERR_CODE validate(const char* zdwFile, const vector<string>& src_filenames,
+	ERR_CODE validate(const char* zdwFile, const std::vector<std::string>& src_filenames,
 		const char* exeName, const char* outputDir=NULL);
 
 	ULONG numRows;
 
-	vector<std::string> m_DWColumns;
-	vector<char unsigned> m_ColumnType;
-	vector<int> columnCharSize; //# of characters in the data type
+	std::vector<std::string> m_DWColumns;
+	std::vector<char unsigned> m_ColumnType;
+	std::vector<int> columnCharSize; //# of characters in the data type
 	char *m_row;
 
 	USHORT m_Version;
@@ -148,14 +147,14 @@ private:
 
 	Dictionary uniques;
 
-	vector<char*> rowColumns;
+	std::vector<char*> rowColumns;
 	char unsigned *minmaxset;
-	vector<ULONGLONG> columnMin;
-	vector<ULONGLONG> columnMax;
+	std::vector<ULONGLONG> columnMin;
+	std::vector<ULONGLONG> columnMax;
 	char unsigned *columnSize;
-	vector<ULONGLONG> columnVal;
-	vector<storageBytes> columnStoredVal[2];
-	vector<short> usedColumn;
+	std::vector<ULONGLONG> columnVal;
+	std::vector<storageBytes> columnStoredVal[2];
+	std::vector<short> usedColumn;
 
 	const bool bQuiet; //quiet running (no progress output messages)
 	bool bTrimTrailingSpaces;
