@@ -81,9 +81,9 @@ char const * const VIRTUAL_EXPORT_BASENAME_COLUMN_NAME = "virtual_export_basenam
 char const * const VIRTUAL_EXPORT_ROW_COLUMN_NAME = "virtual_export_row";
 
 namespace {
-    string getInputFilename(string filename) {
-	    return !filename.empty() ? filename : string("stdin");
-    }
+	string getInputFilename(string filename) {
+		return !filename.empty() ? filename : string("stdin");
+	}
 
  /*
   * In: inFileName
@@ -106,14 +106,14 @@ namespace {
 			const string buf = "./" + inFileNameStr;
 			sourceDir = strdup(buf.c_str());
 			sourceDir[1] = 0;
-			filestub_local = sourceDir+2;
+			filestub_local = sourceDir + 2;
 		}
 
 		//Modify input filestub: cut off the final ".zdw*" for naming the output file(s).
 		char *pos = strstr(filestub_local, ".zdw");
 		while (pos) {
 			//Look for another ".zdw"
-			char *nextPos = strstr(pos+4, ".zdw");
+			char *nextPos = strstr(pos + 4, ".zdw");
 			if (nextPos)
 				pos = nextPos;
 			else {
@@ -366,7 +366,7 @@ bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
 	const string delimiters = ", ";
 
 	// Skip delimiters at beginning.
-    string::size_type lastPos = csv_str.find_first_not_of(delimiters, 0);
+	string::size_type lastPos = csv_str.find_first_not_of(delimiters, 0);
 
 	// Find first "non-delimiter".
 	string::size_type pos = csv_str.find_first_of(delimiters, lastPos);
@@ -428,7 +428,7 @@ bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
 	}
 
 	int unsigned index = 0;
-	for(vector<string>::const_iterator itr=csv_vector.begin(); itr!=csv_vector.end(); itr++)
+	for (vector<string>::const_iterator itr = csv_vector.begin(); itr != csv_vector.end(); itr++)
 	{
 		// Add column name to the map.
 		const string& column_name = *itr;
@@ -478,7 +478,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDescToStdOut(
 	const vector<string>& columnNames)
 {
 	FILE *out = stdout;
-	if(!out)
+	if (!out)
 	{
 		fprintf(stderr, "%s: Could not open STDOUT for writing\n", exeName.c_str());
 		return FILE_CREATION_ERR;
@@ -516,7 +516,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::GetSchema(
 	vector<string>::const_iterator strIt;
 	vector<string>::const_iterator begin = outColumnTexts.begin();
 	for (strIt = begin; strIt != outColumnTexts.end(); ++strIt) {
-		if(strIt != begin) {
+		if (strIt != begin) {
 			stream << ",\n";
 		}
 		stream << *strIt;
@@ -538,7 +538,7 @@ string UnconvertFromZDW_Base::GetBaseNameForInFile(const string &inFileName) {
 	// Must get the value of outputBaseName *before* we deallocate sourceDir since the
 	// character buffer used for outputBasename will be freed when we free sourceDir.
 	const string inFileBaseName = outputBasename;
-	if(sourceDir)
+	if (sourceDir)
 		free(sourceDir);
 	return inFileBaseName;
 }
@@ -550,7 +550,7 @@ vector<string> UnconvertFromZDW_Base::getDesc(const vector<string>& columnNames,
 	const ULONG numColumns = columnNames.size();
 	const ULONG numOutputColumns = numColumns + this->blankColumnNames.size();
 	vector<string> outColumnTexts(numOutputColumns);
-	for(size_t c = 0; c < numColumns; c++)
+	for (size_t c = 0; c < numColumns; c++)
 	{
 		const int outColumnIndex = this->namesOfColumnsToOutput.empty() ? c : this->outputColumns[c];
 		if (outColumnIndex != IGNORE) //only list columns that are being outputted
@@ -567,7 +567,7 @@ vector<string> UnconvertFromZDW_Base::getDesc(const vector<string>& columnNames,
 	}
 
 	//When requesting absent columns for padding, give them a generic text type.
-	for (map<int, string>::const_iterator iter=this->blankColumnNames.begin(); iter!=this->blankColumnNames.end(); ++iter)
+	for (map<int, string>::const_iterator iter = this->blankColumnNames.begin(); iter != this->blankColumnNames.end(); ++iter)
 	{
 		outColumnTexts[iter->first] =
 			getColumnDesc(iter->second, TEXT, size_t(-1), name_type_separator, delimiter);
@@ -583,7 +583,7 @@ string UnconvertFromZDW_Base::getColumnDesc(const string& name, UCHAR type, size
 	string text = name;
 	text += name_type_separator;
 
-	switch(type)
+	switch (type)
 	{
 		case VIRTUAL_EXPORT_FILE_BASENAME:
 		case VARCHAR:
@@ -624,7 +624,7 @@ string UnconvertFromZDW_Base::getColumnDesc(const string& name, UCHAR type, size
 void UnconvertFromZDW_Base::cleanupBlock()
 {
 	//Deinit for this block.
-	for (size_t i=0; i<this->dictionary.size(); ++i)
+	for (size_t i = 0; i < this->dictionary.size(); ++i)
 		delete[] this->dictionary[i];
 	delete[] this->uniques;
 	delete[] this->visitors;
@@ -655,8 +655,8 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::parseBlockHeader()
 	assert(!this->columnBase);
 	assert(!this->columnVal);
 
-	assert(sizeof(UCHAR)==1);
-	assert(sizeof(USHORT)==2);
+	assert(sizeof(UCHAR) == 1);
+	assert(sizeof(USHORT) == 2);
 
 	readLineLength();
 
@@ -674,8 +674,8 @@ void UnconvertFromZDW_Base::readLineLength()
 	{
 		//Each block stores this header info.
 		readBytes(&this->numLines, 4);
-		if (this->version>=6) {
-			assert(sizeof(this->exportFileLineLength)==4);
+		if (this->version >= 6) {
+			assert(sizeof(this->exportFileLineLength) == 4);
 			readBytes(&this->exportFileLineLength, 4);
 		} else {
 			// Before version 6, the format only allowed a 2-byte length field.
@@ -683,7 +683,7 @@ void UnconvertFromZDW_Base::readLineLength()
 			// and storing it in the properly sized variable.
 			USHORT t_version;
 			readBytes(&t_version, 2);
-			this->exportFileLineLength=t_version;
+			this->exportFileLineLength = t_version;
 		}
 		readBytes(&this->lastBlock, 1);
 
@@ -749,18 +749,18 @@ void UnconvertFromZDW_Base::readDictionary()
 			this->uniques[0].m_Char.n = 0;
 			this->uniques[0].m_PrevChar.n = 0;
 			unsigned int c;
-			for(c = 1; c <= this->dictionarySize; c++)
+			for (c = 1; c <= this->dictionarySize; c++)
 			{
 				readBytes(this->uniques[c].m_Char.c, BLOCKSIZE);
 				readBytes(this->uniques[c].m_PrevChar.c, indexSize);
-				if(this->bShowStatus && !(c % OUTPUT_MOD))
+				if (this->bShowStatus && !(c % OUTPUT_MOD))
 				{
-					fprintf(this->statusOutput, "\r%u", c-1);
+					fprintf(this->statusOutput, "\r%u", c - 1);
 					fflush(this->statusOutput);
 				}
 			}
 			if (this->bShowStatus && indexSize != 0)
-				fprintf(this->statusOutput, "\r%u\n", c-1);
+				fprintf(this->statusOutput, "\r%u\n", c - 1);
 		}
 	}
 
@@ -779,7 +779,7 @@ void UnconvertFromZDW_Base::readDictionaryChunk(const size_t size)
 	size_t bytesToStitch = 0;
 	const size_t numChunks = this->dictionary.size();
 	if (numChunks) {
-		const size_t prevChunk = numChunks-1;
+		const size_t prevChunk = numChunks - 1;
 		const char *endOfBlock = this->dictionary[prevChunk] + this->dictionary_memblock_size[prevChunk] - 1;
 		textToStitch = endOfBlock;
 		while (*textToStitch)
@@ -794,7 +794,7 @@ void UnconvertFromZDW_Base::readDictionaryChunk(const size_t size)
 	if (bytesToStitch) {
 		//Move partial entry from end of previous block to new block.
 		strcpy(chunk, textToStitch);
-		this->dictionary_memblock_size[numChunks-1] -= bytesToStitch;
+		this->dictionary_memblock_size[numChunks - 1] -= bytesToStitch;
 	}
 
 	readBytes(chunk + bytesToStitch, size);
@@ -833,11 +833,11 @@ void UnconvertFromZDW_Base::readVisitorDictionary()
 			this->visitors[0].m_VID = 0;
 			this->visitors[0].m_PrevID.n = 0;
 			unsigned int c;
-			for(c = 1; c <= this->numVisitors; c++)
+			for (c = 1; c <= this->numVisitors; c++)
 			{
 				readBytes(&(this->visitors[c].m_VID), 8);
 				readBytes(this->visitors[c].m_PrevID.c, vIndexSize);
-				if(this->bShowStatus && !(c % OUTPUT_MOD))
+				if (this->bShowStatus && !(c % OUTPUT_MOD))
 				{
 					fprintf(this->statusOutput, "\r%u", c - 1);
 					fflush(this->statusOutput);
@@ -855,11 +855,11 @@ void UnconvertFromZDW_Base::readColumnFieldStats()
 	readBytes(this->columnSize, this->numColumnsInExportFile);
 	this->columnBase = new ULONGLONG[this->numColumns];
 	ULONG numColumnsUsedFromExportFile = 0;
-	for(unsigned int c = 0; c < this->numColumnsInExportFile; ++c)
+	for (unsigned int c = 0; c < this->numColumnsInExportFile; ++c)
 	{
-		if(this->columnSize[c])
+		if (this->columnSize[c])
 		{
-			readBytes(this->columnBase+c, 8);
+			readBytes(this->columnBase + c, 8);
 			++numColumnsUsedFromExportFile;
 		} else {
 			this->columnBase[c] = 0;
@@ -926,13 +926,13 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 	//3. Parse column names.
 	this->columnNames.clear();
 	readBytes(row, 1);
-	while(row[0])
+	while (row[0])
 	{
 		size_t p = 0;
 		do {
 			readBytes(&(row[++p]), 1);
 		}
-		while(row[p]);
+		while (row[p]);
 		this->columnNames.push_back(row);
 		readBytes(row, 1); //pass null terminator
 	}
@@ -963,13 +963,13 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 
 	//Case-insensitive matching
 	map<string, int unsigned, InsensitiveCompare> columnsCopy;
-	for (map<string, int unsigned>::const_iterator it=this->namesOfColumnsToOutput.begin();
-			it!=this->namesOfColumnsToOutput.end(); ++it)
+	for (map<string, int unsigned>::const_iterator it = this->namesOfColumnsToOutput.begin();
+			it != this->namesOfColumnsToOutput.end(); ++it)
 		columnsCopy[it->first] = it->second;
 
 	//Scan the columns in the file.
 	int unsigned outIndex = 0;
-	for (int unsigned index=0; index<this->numColumns; ++index)
+	for (int unsigned index = 0; index < this->numColumns; ++index)
 	{
 		//Do we have an explicit inclusion/exclusion for this column?
 		map<string, int unsigned>::iterator findIt = columnsCopy.find(this->columnNames[index]);
@@ -1001,7 +1001,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 		//  then we will fill in the missing indexes with blank values.
 		if (this->bOutputEmptyMissingColumns) {
 			//Identify which column names aren't in the file.
-			for (map<string, int unsigned>::const_iterator iter=columnsCopy.begin();
+			for (map<string, int unsigned>::const_iterator iter = columnsCopy.begin();
 				iter != columnsCopy.end(); ++iter)
 			{
 				this->blankColumnNames[iter->second] = iter->first;
@@ -1016,7 +1016,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 			//EX:
 			//    Given a sequence of existing output column positioning of [2,1,3,5],
 			//    we compact the set of values, resulting in the sequence [1,0,2,3], which contains no gaps.
-			int unsigned nextIndex=0;
+			int unsigned nextIndex = 0;
 			for (map<int unsigned, int unsigned>::const_iterator valIter = encounteredValues.begin();
 					valIter != encounteredValues.end(); ++valIter, ++nextIndex)
 			{
@@ -1065,7 +1065,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 template <typename T>
 void UnconvertFromZDW<T>::outputDefault(T& buffer, const UCHAR type)
 {
-	switch(type)
+	switch (type)
 	{
 		case CHAR:
 		case VARCHAR:
@@ -1142,7 +1142,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 			if (this->columnSize[c])
 			{
 				storageBytes& val = this->columnVal[c];
-				if(this->setColumns[u / 8] & (1u << (u % 8))) //is the bit for this column set?
+				if (this->setColumns[u / 8] & (1u << (u % 8))) //is the bit for this column set?
 				{
 					//This column's value is different from that of the previous row,
 					//so we need to read the new value to stay current in the data stream.
@@ -1310,34 +1310,34 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 		fprintf(this->statusOutput, "Reading %u rows\n", this->numLines);
 
 	//Show compression statistics when both test and statistics modes are set.
-	ULONGLONG equalityBitsSet=0;
+	ULONGLONG equalityBitsSet = 0;
 	vector<ULONG> equalityBitsInColumn(this->numSetColumns * 8, 0);
 
 	//If testing, or showing stats, don't actually uncompress any data.
 	if (this->bTestOnly ||
 		//when showing stats, note we only need to scan through this block if there is another one following
-		(this->bShowBasicStatisticsOnly && !isLastBlock()) )
+		(this->bShowBasicStatisticsOnly && !isLastBlock()))
 	{
 		ULONG index;
 
 		//Read in the data and ensure lookup indices are valid, but output nothing.
 		//This code should mirror the read format of the non-test code below.
-		while(this->rowsRead < this->numLines && !isFinished())
+		while (this->rowsRead < this->numLines && !isFinished())
 		{
 			//Process a row.
 			readBytes(this->setColumns, this->numSetColumns); //bit flags -- are fields same as last row?
 
 			long u = 0;
-			for(size_t c = 0; c < this->numColumnsInExportFile; ++c)
+			for (size_t c = 0; c < this->numColumnsInExportFile; ++c)
 			{
 				if (this->columnType[c] == VISID_LOW)
 					continue; //handled along with the adjacent VISID_HIGH column
 
-				if(!this->columnSize[c])
+				if (!this->columnSize[c])
 					continue;
 
 				storageBytes& val = this->columnVal[c];
-				if(this->setColumns[u / 8] & (1u << (u % 8))) //is the bit for this column set?
+				if (this->setColumns[u / 8] & (1u << (u % 8))) //is the bit for this column set?
 				{
 					//This column's value is different from that of the previous row,
 					//so read the new value.
@@ -1352,7 +1352,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 
 				//Validate the field code.
 				if (this->bTestOnly) {
-					switch(this->columnType[c])
+					switch (this->columnType[c])
 					{
 						case VIRTUAL_EXPORT_FILE_BASENAME: assert(!"VIRTUAL_EXPORT_FILE_BASENAME should only get default value"); break;
 						case VISID_LOW: assert(!"VISID_LOW should be skipped"); break;
@@ -1363,7 +1363,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 						case LONGTEXT:
 						case DATETIME:
 						case CHAR_2:
-							if(val.n)
+							if (val.n)
 							{
 								index = val.n + this->columnBase[c];
 								if (index > this->dictionarySize)
@@ -1403,7 +1403,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 		//Normal parsing and output of the data.
 
 		//Each iteration processes one row.
-		while(this->rowsRead < this->numLines && !isFinished())
+		while (this->rowsRead < this->numLines && !isFinished())
 		{
 			//Process a row.
 			eRet = readNextRow(buffer);
@@ -1411,7 +1411,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 				return eRet;
 
 			//Progress.
-			if(this->bShowStatus && !(this->rowsRead % 10000))
+			if (this->bShowStatus && !(this->rowsRead % 10000))
 			{
 				fprintf(this->statusOutput, "\r%u", this->rowsRead);
 				fflush(this->statusOutput);
@@ -1419,7 +1419,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 		}
 
 		//Final progress for this block.
-		if(this->bShowStatus)
+		if (this->bShowStatus)
 			fprintf(this->statusOutput, "\r%u\n", this->rowsRead);
 	}
 
@@ -1437,8 +1437,8 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 	//Optional compression characteristic display
 	if (equalityBitsSet) {
 		size_t nonEmptyColumns = 0;
-		for(size_t c = 0; c < this->numColumnsInExportFile; ++c) {
-			if(this->columnSize[c])
+		for (size_t c = 0; c < this->numColumnsInExportFile; ++c) {
+			if (this->columnSize[c])
 				++nonEmptyColumns;
 		}
 
@@ -1447,7 +1447,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 			this->numLines, this->numColumnsInExportFile, this->numSetColumns,
 			nonEmptyColumns, nonEmptyColumns*100/float(this->numColumnsInExportFile));
 
-		for (size_t c=0; c<nonEmptyColumns; ++c) {
+		for (size_t c = 0; c < nonEmptyColumns; ++c) {
 			fprintf(this->statusOutput, "%u ", equalityBitsInColumn[c]);
 		}
 		fprintf(this->statusOutput, "\n");
@@ -1543,7 +1543,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 	{
 		char textbuf[1024];
 		sprintf(textbuf, "%s/%s%s", outputDir, outputBasename, ext ? ext : "");
-		if(this->bShowStatus)
+		if (this->bShowStatus)
 			fprintf(this->statusOutput, "Writing %s\n", textbuf);
 		//Open output stream.
 		if (bStdout) {
@@ -1551,7 +1551,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 		} else {
 			this->out = fopen(textbuf, "w");
 		}
-		if(!this->out)
+		if (!this->out)
 		{
 			fprintf(stderr, "%s: Could not open %s for writing\n", this->exeName.c_str(), textbuf);
 			eRet = FILE_CREATION_ERR;
@@ -1584,7 +1584,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 			memcpy(&all_output_columns[0], this->outputColumns, num_output_columns * sizeof(int));
 			//If there are blank columns, define them at the end of the input buffer, each outputting to its specified position in the column list.
 			size_t index = this->numColumns;
-			for (map<int, string>::const_iterator iter=this->blankColumnNames.begin(); iter!=this->blankColumnNames.end(); ++iter)
+			for (map<int, string>::const_iterator iter = this->blankColumnNames.begin(); iter != this->blankColumnNames.end(); ++iter)
 			{
 				all_output_columns[index++] = iter->first;
 			}
@@ -1623,9 +1623,9 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 
 Done:
 	//Clean-up.
-	if(sourceDir)
+	if (sourceDir)
 		free(sourceDir);
-	if(outputDir)
+	if (outputDir)
 		free(outputDir);
 	if (this->out && !bStdout)
 		fclose(this->out);
@@ -1694,7 +1694,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(char ** buffer,
 						return ROW_COUNT_ERR; //premature exit (truncated file?)
 
 					//Process and return a row.
-					if(!bUseInternalBuffer)
+					if (!bUseInternalBuffer)
 					{
 						this->pBufferedOutput->setOutputBuffer(buffer, size);
 					}
@@ -1702,7 +1702,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(char ** buffer,
 					this->pBufferedOutput->setOutputColumnPtrs(outColumns);
 					ERR_CODE eRet = readNextRow(*this->pBufferedOutput);
 					ERR_CODE eRetForNumColumns = this->getNumOutputColumns(numColumns);
-					if(eRetForNumColumns != OK)
+					if (eRetForNumColumns != OK)
 						numColumns = 0;
 					return eRet;
 				} else {
@@ -1779,7 +1779,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::handleZDWParseBlockHea
 
 	assert(!this->pBufferedOutput.get());
 	this->pBufferedOutput.reset(new BufferedOutputInMem(this->exportFileLineLength + this->virtualLineLength + 1, bUseInternalBuffer));
-	if(this->namesOfColumnsToOutput.empty())
+	if (this->namesOfColumnsToOutput.empty())
 	{
 		//So getNumOutputColumns works in this use case
 		pBufferedOutput->SetNumOutputColumns(this->numColumns);
@@ -1789,7 +1789,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::handleZDWParseBlockHea
 		memcpy(&all_output_columns[0], this->outputColumns, num_output_columns * sizeof(int));
 		//If there are blank columns, define them at the end of the input buffer, each outputting to its specified position in the column list.
 		size_t index = this->numColumns;
-		for (map<int, string>::const_iterator iter=this->blankColumnNames.begin(); iter!=this->blankColumnNames.end(); ++iter)
+		for (map<int, string>::const_iterator iter = this->blankColumnNames.begin(); iter != this->blankColumnNames.end(); ++iter)
 		{
 			all_output_columns[index++] = iter->first;
 		}
@@ -1809,7 +1809,7 @@ void UnconvertFromZDWToMemory::getColumnNamesVector(vector<string> &columnNamesV
 
 	OutputOrderIndexer *pOutputOrderIndexer = new OutputOrderIndexer[numOutputColumns];
 	int validNumColumns = 0;
-	for(size_t c = 0; c < numColumns; c++)
+	for (size_t c = 0; c < numColumns; c++)
 	{
 		const int outColumnIndex = this->namesOfColumnsToOutput.empty() ? c : this->outputColumns[c];
 		if (outColumnIndex == IGNORE)
@@ -1824,20 +1824,20 @@ void UnconvertFromZDWToMemory::getColumnNamesVector(vector<string> &columnNamesV
 	}
 
 	//When requesting absent columns for padding, give them a generic text type.
-	for (map<int, string>::const_iterator iter=this->blankColumnNames.begin(); iter!=this->blankColumnNames.end(); ++iter)
+	for (map<int, string>::const_iterator iter = this->blankColumnNames.begin(); iter != this->blankColumnNames.end(); ++iter)
 	{
 		// if index is a negative number, get the column name from blankColumnNames
-		pOutputOrderIndexer[validNumColumns].index = -1*(iter->first) - 1; //ensure negative value to differentiate
+		pOutputOrderIndexer[validNumColumns].index = -1 * (iter->first) - 1; //ensure negative value to differentiate
 		pOutputOrderIndexer[validNumColumns].outputIndex = iter->first;
 		validNumColumns++;
 	}
 
 	qsort(pOutputOrderIndexer, validNumColumns, sizeof(OutputOrderIndexer), compareByOutputIndex);
 
-	for(int i=0; i<validNumColumns; i++)
+	for (int i = 0; i < validNumColumns; i++)
 	{
 		if (pOutputOrderIndexer[i].index < 0) {
-			columnNamesVector.push_back(blankColumnNames[(pOutputOrderIndexer[i].index+1) * -1]);
+			columnNamesVector.push_back(blankColumnNames[(pOutputOrderIndexer[i].index + 1) * -1]);
 		} else {
 			columnNamesVector.push_back(columnNames[pOutputOrderIndexer[i].index]);
 		}
@@ -1857,7 +1857,7 @@ bool UnconvertFromZDWToMemory::OutputDescToFile(const string &outputDir)
 	const char* outputBasename = NULL;
 	InitDirAndBasenameFromFileName(this->inFileName, sourceDir, outputBasename);
 	ERR_CODE eRet = this->outputDescToFile(this->columnNames, outputDir.c_str(), outputBasename, ".sql");
-	if(sourceDir)
+	if (sourceDir)
 		free(sourceDir);
 	return eRet == OK;
 }

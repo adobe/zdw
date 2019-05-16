@@ -23,7 +23,7 @@
 void ShowHelp(char* executable)
 {
 	char* exe = strrchr(executable, '/');
-	if(exe)
+	if (exe)
 		++exe; //skip '/'
 	else
 		exe = executable;
@@ -38,9 +38,9 @@ void ShowHelp(char* executable)
 void processLine(const char** outColumns, size_t numColumns)
 {
 	assert(outColumns);
-	for (size_t col=0; col<numColumns; ++col) {
+	for (size_t col = 0; col < numColumns; ++col) {
 		printf("%s", outColumns[col]);
-		if (col<numColumns-1)
+		if (col<numColumns - 1)
 			printf("\t");
 	}
 	printf("\n");
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
 	string namesOfColumnsToOutput;
 	if (!strcmp(argv[1], "-ci"))
 	{
-		if(argc < 4)
+		if (argc < 4)
 		{
 			ShowHelp(argv[0]);
 			exit(1);
@@ -68,10 +68,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	//Each iteration unconverts one ZDW input file.
-	for (int i=fileBeginIndex; i<argc; ++i)
+	for (int i = fileBeginIndex; i < argc; ++i)
 	{
 		UnconvertFromZDWToMemory unconvert(argv[i], false); //test in-memory API
-		if(!namesOfColumnsToOutput.empty())
+		if (!namesOfColumnsToOutput.empty())
 		{
 			unconvert.setNamesOfColumnsToOutput(namesOfColumnsToOutput, ZDW::SKIP_INVALID_COLUMN);
 		}

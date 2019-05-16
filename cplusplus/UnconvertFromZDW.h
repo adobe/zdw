@@ -93,25 +93,25 @@ public:
 	static const char ERR_CODE_TEXTS[ZDW::ERR_CODE_COUNT + 1][30];
 
 	UnconvertFromZDW_Base(const std::string &inFileName,
-			const bool bShowStatus=true, const bool bQuiet=true,
-			const bool bTestOnly=false, const bool bOutputDescFileOnly=false);
+			const bool bShowStatus = true, const bool bQuiet = true,
+			const bool bTestOnly = false, const bool bOutputDescFileOnly = false);
 	virtual ~UnconvertFromZDW_Base();
 
 	//Common API.
-	std::vector<std::string> getColumnNames() const {return this->columnNames;}
-	UCHAR* getColumnTypes() const {return this->columnType;}
-	ULONG getRowsRead() const {return this->rowsRead;} //in current block
-	ULONG getNumLines() const {return this->numLines;} //in current block
-	bool isLastBlock() const {return this->lastBlock != 0;}
-	bool isFinished() const {return this->input->eof();}
-	bool isReadOpen() const {return this->input && this->input->is_open();}
+	std::vector<std::string> getColumnNames() const { return this->columnNames; }
+	UCHAR* getColumnTypes() const { return this->columnType; }
+	ULONG getRowsRead() const { return this->rowsRead; } //in current block
+	ULONG getNumLines() const { return this->numLines; } //in current block
+	bool isLastBlock() const { return this->lastBlock != 0; }
+	bool isFinished() const { return this->input->eof(); }
+	bool isReadOpen() const { return this->input && this->input->is_open(); }
 
 	static void printError(const std::string &exeName, const std::string &inFileName);
 
 	ERR_CODE readHeader();
 	bool setNamesOfColumnsToOutput(const std::string& csv_str, ZDW::COLUMN_INCLUSION_RULE inclusionRule);
 	bool setNamesOfColumnsToOutput(const std::vector<std::string> &csv_vector, ZDW::COLUMN_INCLUSION_RULE inclusionRule);
-	void showBasicStatisticsOnly(bool bVal=true) {this->bShowBasicStatisticsOnly = bVal;}
+	void showBasicStatisticsOnly(bool bVal = true) { this->bShowBasicStatisticsOnly = bVal; }
 
 	ERR_CODE GetSchema(std::ostream& stream);
 
@@ -120,7 +120,7 @@ protected:
 		const char* outputDir, const char* filestub, const char* ext);
 	ERR_CODE outputDescToStdOut(const std::vector<std::string>& columnNames);
 
-	size_t readBytes(void* buf, const size_t len, const bool bHaltOnReadError=true);
+	size_t readBytes(void* buf, const size_t len, const bool bHaltOnReadError = true);
 	size_t skipBytes(const size_t len);
 	char* GetWord(ULONG index, char* row);
 
@@ -154,7 +154,7 @@ protected:
 	char *row;
 
 	static const size_t TEMP_BUF_SIZE = 512;
-	static const size_t TEMP_BUF_LAST_POS = TEMP_BUF_SIZE-1;
+	static const size_t TEMP_BUF_LAST_POS = TEMP_BUF_SIZE - 1;
 	char temp_buf[TEMP_BUF_SIZE];
 
 	std::string exeName;
@@ -200,7 +200,7 @@ protected:
 		ZDW_FINISHING,
 		ZDW_END
 	};
-	void setState(STATE state) {this->eState = state;}
+	void setState(STATE state) { this->eState = state; }
 	STATE eState;
 
 	size_t GetCurrentRowNumber() const { return currentRowNumber; }
@@ -228,8 +228,8 @@ class UnconvertFromZDW : public UnconvertFromZDW_Base
 {
 public:
 	UnconvertFromZDW(const std::string &inFileName,
-			const bool bShowStatus=true, const bool bQuiet=true,
-			const bool bTestOnly=false, const bool bOutputDescFileOnly=false)
+			const bool bShowStatus = true, const bool bQuiet = true,
+			const bool bTestOnly = false, const bool bOutputDescFileOnly = false)
 		: UnconvertFromZDW_Base(inFileName, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly)
 	{ }
 
@@ -250,10 +250,10 @@ class UnconvertFromZDWToFile : public UnconvertFromZDW<BufferedOutput_T>
 {
 public:
 	UnconvertFromZDWToFile(const std::string &inFileName,
-			const bool bShowStatus=true, const bool bQuiet=true,
-			const bool bTestOnly=false, const bool bOutputDescFileOnly=false)
+			const bool bShowStatus = true, const bool bQuiet = true,
+			const bool bTestOnly = false, const bool bOutputDescFileOnly = false)
 		: UnconvertFromZDW<BufferedOutput_T>(inFileName, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly)
-        , out(NULL)
+		, out(NULL)
 	{ }
 
 	ZDW::ERR_CODE unconvert(const char* exeName, const char* outputBasename, const char* ext, const char* outputDir, bool bStdout);
@@ -267,9 +267,9 @@ class UnconvertFromZDWToMemory : public UnconvertFromZDW<BufferedOutputInMem>
 public:
 	// if set bUseInternalBuffer to false, please use getRow(char ** buffer, size_t *size, char** outColumns) to get row data.
 	UnconvertFromZDWToMemory(const std::string &inFileName,
-			const bool bUseInternalBuffer=true,
-			const bool bShowStatus=true, const bool bQuiet=true,
-			const bool bTestOnly=false, const bool bOutputDescFileOnly=false)
+			const bool bUseInternalBuffer = true,
+			const bool bShowStatus = true, const bool bQuiet = true,
+			const bool bTestOnly = false, const bool bOutputDescFileOnly = false)
 		: UnconvertFromZDW<BufferedOutputInMem>(inFileName, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly)
 		, num_output_columns(0)
 		, bUseInternalBuffer(bUseInternalBuffer)
@@ -287,7 +287,7 @@ public:
 	size_t getCurrentRowLength();
 
 	// Call getNumOutputColumns or getRow first to retrieve the actual value of line length
-	ULONG getLineLength() {return this->exportFileLineLength + this->virtualLineLength;}
+	ULONG getLineLength() { return this->exportFileLineLength + this->virtualLineLength; }
 
 	void getColumnNamesVector(std::vector<std::string> &columnNamesVector);
 	bool hasColumnName(const std::string& name) const;

@@ -17,7 +17,7 @@
 #include <cstring>
 #include <stdio.h>
 
-const size_t HEAP_BLOCK_SIZE = 64*1024*1024;
+const size_t HEAP_BLOCK_SIZE = 64 * 1024 * 1024;
 
 char* StringHeap::copyToHeap(const char* str, const size_t len)
 {
