@@ -640,7 +640,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	temp_outfile_name += temp_suffix;
 	temp_outfile_name += ".zdw";
 	temp_outfile_name += getExtensionForCompressor();
-	
+
 	string cmd = getCompressionCommand();
 	if (zArgs) {
 		cmd += " ";
