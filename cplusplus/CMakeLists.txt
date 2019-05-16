@@ -1,8 +1,7 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 project(zdw)
 
-add_definitions(-D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS)
-add_compile_options("-Wall")
+add_definitions(-D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS -Wall)
 
 add_library(zdw
 	UnconvertFromZDW.cpp
@@ -36,7 +35,7 @@ find_package(Threads REQUIRED)
 
 include_directories( zdw ${CMAKE_CURRENT_SOURCE_DIR} ${ZLIB_INCLUDE_DIRS} )
 
-# TODO: Investigate setting this flag on CMAKE 2.8+
+# for cmake 2.6 compatibility, can't automatically handle include files
 # target_include_directories( zdw PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${ZLIB_INCLUDE_DIRS} )
 
 target_link_libraries(zdw ${ZLIB_LIBRARIES})
