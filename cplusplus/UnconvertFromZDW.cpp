@@ -270,7 +270,7 @@ size_t UnconvertFromZDW_Base::llutoa(ULONGLONG value)
 	{
 		rem    = value % 10;
 		value /= 10;
-		this->temp_buf[--pos] = (char)(rem + 0x30); //+ '0'
+		this->temp_buf[--pos] = static_cast<char>(rem + 0x30); //+ '0'
 	} while (value != 0);
 
 	return TEMP_BUF_LAST_POS - pos;
@@ -293,7 +293,7 @@ size_t UnconvertFromZDW_Base::lltoa(SLONGLONG value)
 	{
 		rem    = value % 10;
 		value /= 10;
-		this->temp_buf[--pos] = (char)(rem + 0x30); //+ '0'
+		this->temp_buf[--pos] = static_cast<char>(rem + 0x30); //+ '0'
 	} while (value != 0);
 
 	if (bMinus) //sign goes at beginning
@@ -694,7 +694,7 @@ void UnconvertFromZDW_Base::readLineLength()
 		}
 	}
 	if (this->bShowBasicStatisticsOnly) {
-		fprintf(this->statusOutput, "Max line length = %lu\n", (long unsigned)this->exportFileLineLength);
+		fprintf(this->statusOutput, "Max line length = %lu\n", static_cast<long unsigned>(this->exportFileLineLength));
 	}
 }
 
@@ -866,7 +866,7 @@ void UnconvertFromZDW_Base::readColumnFieldStats()
 		}
 	}
 	assert(numColumnsUsedFromExportFile <= this->numColumnsInExportFile);
-	this->numSetColumns = (long)ceil(numColumnsUsedFromExportFile / 8.0);
+	this->numSetColumns = static_cast<long>(ceil(numColumnsUsedFromExportFile / 8.0));
 	this->setColumns = new unsigned char[this->numSetColumns];
 	this->columnVal = new storageBytes[this->numColumns];
 	memset(this->columnVal, 0, this->numColumns * sizeof(storageBytes));
@@ -921,7 +921,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 		}
 	}
 	if (this->bShowBasicStatisticsOnly)
-		fprintf(this->statusOutput, "File version %d\n", (int)this->version);
+		fprintf(this->statusOutput, "File version %d\n", static_cast<int>(this->version));
 
 	//3. Parse column names.
 	this->columnNames.clear();
@@ -1228,7 +1228,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 						if (this->version >= 5) {
 							//Deserialize character text (possibly an escaped character sequence).
 							const ULONGLONG chartuple = val.n + this->columnBase[c];
-							temp[0] = (char)chartuple;
+							temp[0] = static_cast<char>(chartuple);
 							if (temp[0] != '\\') {
 								if (!temp[0]) //there's an empty field for this column-row
 									outputDefault(buffer, this->columnType[c]);
@@ -1236,12 +1236,12 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 									buffer.write(temp, 1);
 							} else {
 								//Output escaped character (e.g. "\\\t")
-								temp[1] = (char)(chartuple / 256);
+								temp[1] = static_cast<char>(chartuple / 256);
 								buffer.write(temp, 2);
 							}
 						} else {
 							//Before version 5, the converter included no more than one byte per char field.
-							temp[0] = (char)val.n;
+							temp[0] = static_cast<char>(val.n);
 							buffer.write(temp, 1);
 						}
 					} else {
