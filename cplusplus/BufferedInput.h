@@ -25,7 +25,7 @@ class BufferedInput
 public:
 	// either open a pipe with a command, and read input from the pipe,
 	// or open a gz file and read via zlib API
-	BufferedInput(const char* command, const size_t capacity=16*1024, bool is_gz_file=false)
+	BufferedInput(const char* command, const size_t capacity = 16 * 1024, bool is_gz_file = false)
 		: fp(NULL)
 		, gzFp(NULL)
 		, buffer(NULL)
@@ -61,7 +61,7 @@ public:
 	}
 
 	void close() {
-		if(is_gz_file) {
+		if (is_gz_file) {
 			if (gzFp) {
 				gzclose(gzFp);
 				gzFp = NULL;
@@ -94,13 +94,13 @@ public:
 	}
 
 	//Returns: whether file handle appears to be open
-	bool is_open() const {return (this->fp != NULL) || this->bFromStdin || this->gzFp; }
+	bool is_open() const { return (this->fp != NULL) || this->bFromStdin || this->gzFp; }
 
 	//Input source.
 	//Either must be set explicitly in order to avoid inadvertent reads from an unexpected source.
-	void readFromStdin(const bool bVal=true) {this->bFromStdin = bVal;}
+	void readFromStdin(const bool bVal = true) { this->bFromStdin = bVal; }
 
-	void reset() {index = length = 0;}
+	void reset() { index = length = 0; }
 
 	bool can_read_more_data() const {
 		if (eof())
@@ -119,7 +119,7 @@ public:
 		this->index = this->length = 0;
 		do {
 			//Iterate reads when we don't receive the entire buffer immediately.
-			if(is_gz_file)
+			if (is_gz_file)
 			{
 				this->length += gzread(this->gzFp, this->buffer + this->length,
 					this->capacity - this->length);
@@ -140,8 +140,8 @@ public:
 		if (this->bFromStdin)
 			return fgets(buf, size, stdin);
 
-		const size_t size_minus_1 = size-1;
-		size_t out_pos=0;
+		const size_t size_minus_1 = size - 1;
+		size_t out_pos = 0;
 		while (can_read_more_data()) {
 			while (this->index < this->length) {
 				if (out_pos == size_minus_1) {
@@ -200,7 +200,7 @@ public:
 			{
 				//Buffer is not large enough to store the rest of the requested data.
 				//Just pass the rest of the data through without buffering.
-				if(is_gz_file)
+				if (is_gz_file)
 				{
 					bytesRead += gzread(this->gzFp, data, size);
 					this->bEOF = gzeof(this->gzFp) != 0;
@@ -239,10 +239,10 @@ public:
 
 		if (this->bFromStdin) {
 			//Skips ahead the requested number of bytes in stdin.
-			size_t advanced=0;
+			size_t advanced = 0;
 
-			const size_t blocks=size/BLOCK_SIZE;
-			for (i=0; i<blocks; ++i) {
+			const size_t blocks = size/BLOCK_SIZE;
+			for (i = 0; i < blocks; ++i) {
 				bytes_read = fread(tempBlock, 1, BLOCK_SIZE, stdin);
 				advanced += bytes_read;
 				size -= bytes_read;
@@ -277,9 +277,9 @@ public:
 		size_t advanced = bytesInBuffer;
 
 		//2. Skip ahead the remaining number of bytes.
-		const size_t blocks=size/BLOCK_SIZE;
-		for (i=0; i<blocks; ++i) {
-			if(is_gz_file)
+		const size_t blocks = size / BLOCK_SIZE;
+		for (i = 0; i < blocks; ++i) {
+			if (is_gz_file)
 			{
 				bytes_read = gzread(this->gzFp, tempBlock, BLOCK_SIZE);
 			} else {
@@ -289,7 +289,7 @@ public:
 			size -= bytes_read;
 		}
 		assert(size < BLOCK_SIZE);
-		if(is_gz_file)
+		if (is_gz_file)
 		{
 			advanced += gzread(this->gzFp, tempBlock, size);
 			this->bEOF = gzeof(this->gzFp) != 0;
@@ -306,7 +306,7 @@ public:
 		assert(!gzFp);
 		assert(!fp);
 
-		if(is_gz_file)
+		if (is_gz_file)
 			gzFp = gzopen(command.c_str(), "rb");
 		else
 			fp = popen(command.c_str(), "r");

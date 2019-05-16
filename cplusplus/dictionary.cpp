@@ -24,7 +24,7 @@ void Dictionary::clear()
 //Returns: true if additional memory is available, or false if memory limit has been exceeded
 bool Dictionary::insert(const char* str)
 {
-	std::pair<DictionaryT::iterator,bool> ret =
+	std::pair<DictionaryT::iterator, bool> ret =
 		stringOffsets.insert(std::pair<const char*, int unsigned>(str, 0));
 
 	if (ret.second) {
@@ -57,7 +57,7 @@ ULONG Dictionary::getBytesInOffset() const
 {
 	ULONG indexSize = 1;
 	ULONG maxIndex = getSize();
-	while(maxIndex >= 256)
+	while (maxIndex >= 256)
 	{
 		++indexSize;
 		maxIndex /= 256;
@@ -92,7 +92,7 @@ void Dictionary::write(FILE* f)
 	ULONG index = 1;
 
 	//Populate offsets and dump keys.
-	for (DictionaryT::iterator it=stringOffsets.begin(); it!=stringOffsets.end(); ++it)
+	for (DictionaryT::iterator it = stringOffsets.begin(); it != stringOffsets.end(); ++it)
 	{
 		it->second = index;
 		const char* str = it->first;

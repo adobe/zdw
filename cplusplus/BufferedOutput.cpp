@@ -12,13 +12,13 @@
 
 #include "BufferedOutput.h"
 
-int compareByIndex(const void * first, const void * second)
+int compareByIndex(const void* first, const void* second)
 {
 	return (reinterpret_cast<const OutputOrderIndexer *>(first))->index
 			- (reinterpret_cast<const OutputOrderIndexer *>(second))->index;
 }
 
-int compareByOutputIndex(const void * first, const void * second)
+int compareByOutputIndex(const void* first, const void* second)
 {
 	return (reinterpret_cast<const OutputOrderIndexer *>(first))->outputIndex
 			- (reinterpret_cast<const OutputOrderIndexer *>(second))->outputIndex;

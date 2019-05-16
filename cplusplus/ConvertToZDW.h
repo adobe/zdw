@@ -61,7 +61,7 @@ public:
 	};
 	static const char ERR_CODE_TEXTS[ERR_CODE_COUNT][30];
 
-	ConvertToZDW(const bool bQuiet=false, const bool bStreamingInput=false)
+	ConvertToZDW(const bool bQuiet = false, const bool bStreamingInput = false)
 		: compressor(GZIP)
 		, numRows(0)
 		, m_row(NULL)
@@ -71,7 +71,7 @@ public:
 		, bTrimTrailingSpaces(false)
 		, bStreamingInput(bStreamingInput)
 		, tmp_fp(NULL)
-	{}
+	{ }
 	~ConvertToZDW()
 	{
 		delete[] m_row;
@@ -79,17 +79,17 @@ public:
 		delete[] columnSize;
 	}
 
-	void trimTrailingSpaces(bool val=true) {bTrimTrailingSpaces = val;}
-	const char* getInputFileExtension() const {return "sql";}
+	void trimTrailingSpaces(bool val = true) { bTrimTrailingSpaces = val; }
+	const char* getInputFileExtension() const { return "sql"; }
 
 	ERR_CODE convertFile(const char* infile, const char* exeName,
-		const bool bValidate, char* filestub, const char* outputDir=NULL, const char* zArgs=NULL);
+		const bool bValidate, char* filestub, const char* outputDir = NULL, const char* zArgs = NULL);
 
 	Compressor compressor;
 
 private:
 	const char* getExtensionForCompressor() {
-		switch(compressor) {
+		switch (compressor) {
 			case GZIP:
 				return ".gz";
 			case BZIP2:
@@ -102,7 +102,7 @@ private:
 	}
 
 	const char* getCompressionCommand() {
-		switch(compressor) {
+		switch (compressor) {
 			case GZIP:
 				return "gzip";
 			case BZIP2:
@@ -129,11 +129,11 @@ private:
 
 	INPUT_STATUS parseInput(FILE* in);
 	ERR_CODE processFile(FILE* in, const char* filestub, const size_t numColumns,
-			const bool bValidate, const char* exeName, const char* outputDir=NULL, const char* zArgs=NULL);
+			const bool bValidate, const char* exeName, const char* outputDir = NULL, const char* zArgs = NULL);
 	int unsigned ReadDescFile(FILE* f);
 
 	ERR_CODE validate(const char* zdwFile, const std::vector<std::string>& src_filenames,
-		const char* exeName, const char* outputDir=NULL);
+		const char* exeName, const char* outputDir = NULL);
 
 	ULONG numRows;
 

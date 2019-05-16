@@ -38,7 +38,7 @@ int Common::GetNextRow(
 			continue;
 		}
 
-		bool bEndlineFound = row[len-1] == '\n';
+		bool bEndlineFound = row[len - 1] == '\n';
 		//Count number of char escapes.
 		e = 2;
 		while (e <= len && row[len - e] == '\\')
@@ -46,14 +46,14 @@ int Common::GetNextRow(
 
 		//If it's odd, an escape char interrupted getting the line of text.
 		//So, append some more text until the full line has been compiled.
-		bool bEndOfLine = bEndlineFound && ((e % 2)==0);
+		bool bEndOfLine = bEndlineFound && ((e % 2) == 0);
 		while (str && !bEndOfLine)
 		{
 			//Ensure there is enough space to hold an entire row in the buffer.
-			const bool bBufferFull = (len == rowSize-1);
+			const bool bBufferFull = (len == rowSize - 1);
 			if (bBufferFull)
 			{
-				char *temp = new char[rowSize*2]; //strategy to avoid many reallocations
+				char *temp = new char[rowSize * 2]; //strategy to avoid many reallocations
 				strcpy(temp, row);
 				delete[] row;
 				row = temp;
@@ -65,12 +65,12 @@ int Common::GetNextRow(
 				return 0; //eof -- probably corrupted data
 			len += strlen(str);
 
-			bEndlineFound = row[len-1] == '\n';
+			bEndlineFound = row[len - 1] == '\n';
 			e = 2;
 			while (e <= len && row[len - e] == '\\')
 				++e;
 
-			bEndOfLine = bEndlineFound && ((e % 2)==0);
+			bEndOfLine = bEndlineFound && ((e % 2) == 0);
 		}
 		row[len - 1] = 0; //truncate trailing newline
 		break; //done reading this row

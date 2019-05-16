@@ -23,7 +23,7 @@
 
 //********************************************************
 struct cstringComp {
-	bool operator() (const char* const& lhs, const char* const& rhs) const { return std::strcmp(lhs,rhs) < 0; }
+	bool operator() (const char* const& lhs, const char* const& rhs) const { return std::strcmp(lhs, rhs) < 0; }
 };
 
 typedef std::map<const char*, ULONG, cstringComp> DictionaryT;

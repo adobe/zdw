@@ -30,7 +30,7 @@ private:
 	//Used for reordering column outputs.
 	class ByteBuffer {
 	public:
-		ByteBuffer(int unsigned startSize=16)
+		ByteBuffer(int unsigned startSize = 16)
 		: pBuffer(new char[startSize])
 		, size(0)
 		, capacity(startSize)
@@ -49,7 +49,7 @@ private:
 			swap(this->capacity, rhs.capacity);
 		}
 		ByteBuffer& operator=(const ByteBuffer& rhs) { ByteBuffer(rhs).swap(*this); return *this; }
-		~ByteBuffer() {delete[] this->pBuffer;}
+		~ByteBuffer() { delete[] this->pBuffer; }
 
 		//Write data to the start of the buffer.
 		inline void write(const void* data, const size_t dataSize) {
@@ -73,7 +73,7 @@ private:
 		inline void print(std::string& str) const { str.append(this->pBuffer, this->size); }
 
 	private:
-		char *pBuffer;
+		char* pBuffer;
 		int size;
 		int unsigned capacity;
 	};
@@ -150,7 +150,7 @@ public:
 
 		//Populate column order and buffer to hold each column output.
 		int max_val = -1; //enforce no gaps in the sequence
-		for (int i=0; i<numColumns; ++i) {
+		for (int i = 0; i < numColumns; ++i) {
 			const int val = pOutputOrder[i];
 			if (val != -1) { //skip -1 values (use this to indicate a column is being omitted)
 				assert(val >= 0); //negative values are not supported
@@ -166,12 +166,12 @@ public:
 		//i.e. the number of elements added should equal the largest value encountered
 		//     (actually, one greater than the highest zero-based index)
 		//CAVEAT: this doesn't catch pathological cases (e.g. "2, 2, 2" where the size is one greater than the max_val)
-		return (max_val+1) == int(this->outputIndex.size());
+		return (max_val + 1) == int(this->outputIndex.size());
 	}
-	void setOutputColumnPtrs(const char**) {} //not needed in this class template version
+	void setOutputColumnPtrs(const char**) { } //not needed in this class template version
 
 private:
-	FILE *const fp;
+	FILE* const fp;
 
 	//for (re)ordering column outputs within a line of text
 	std::vector<int> outputIndex; //input --> output index remapping
@@ -187,7 +187,7 @@ private:
 	BufferedOutput &operator=(BufferedOutput const &);
 
 public:
-	BufferedOutput(FILE* fp, const size_t capacity=16*1024)
+	BufferedOutput(FILE* fp, const size_t capacity = 16 * 1024)
 		: fp(fp)
 		, capacity(capacity)
 		, buffer(fp ? new char[capacity] : NULL)
@@ -231,7 +231,7 @@ public:
 		}
 		return bRet;
 	}
-	void writeEmpty() {}
+	void writeEmpty() { }
 
 	//Output a separator between columns.
 	bool writeSeparator(const void* data, const size_t size) { return write(data, size); }
@@ -239,13 +239,13 @@ public:
 	//Completes the current row/line of text.
 	bool writeEndline(const void* data, const size_t size) { return write(data, size); }
 
-	bool setOutputColumnOrder(const int*, const int) {return true;} //not needed here -- use BufferedOrderedOutput if this functionality is desired
-	void setOutputColumnPtrs(const char**) {} //not needed in this class template version
+	bool setOutputColumnOrder(const int*, const int) { return true; } //not needed here -- use BufferedOrderedOutput if this functionality is desired
+	void setOutputColumnPtrs(const char**) { } //not needed in this class template version
 
 private:
-	FILE *const fp;
+	FILE* const fp;
 	const size_t capacity;
-	char *const buffer;
+	char* const buffer;
 
 	size_t index;
 };
@@ -256,15 +256,15 @@ struct OutputOrderIndexer
 	int outputIndex;
 };
 
-extern int compareByIndex(const void * first, const void * second);
-extern int compareByOutputIndex(const void * first, const void * second);
+extern int compareByIndex(const void* first, const void* second);
+extern int compareByOutputIndex(const void* first, const void* second);
 
 //Class to output each row's column values to user-specified char**s.
 class BufferedOutputInMem
 {
 public:
 
-	BufferedOutputInMem(size_t neededBufferSize, bool bUseInternalBuffer=true)
+	BufferedOutputInMem(size_t neededBufferSize, bool bUseInternalBuffer = true)
 		: ppBuffer(NULL)
 		, pBuffer(NULL)
 		, pBufferSize(NULL)
@@ -277,7 +277,7 @@ public:
 		, bUseInternalBuffer(bUseInternalBuffer)
 		, bNeedReorder(false)
 	{
-		if(bUseInternalBuffer)
+		if (bUseInternalBuffer)
 		{
 			this->pBuffer = new char[neededBufferSize];
 		}
@@ -287,12 +287,12 @@ public:
 	{
 		delete[] this->pOutputOrder;
 		delete[] this->pColumnsBuffer;
-		if(bUseInternalBuffer)
+		if (bUseInternalBuffer)
 			delete [] this->pBuffer;
 	}
 
 	// invoke setOutputBuffer before parsing
-	void setOutputBuffer(char ** buffer, size_t *size)
+	void setOutputBuffer(char** buffer, size_t *size)
 	{
 		assert(buffer);
 		assert(*buffer);
@@ -314,16 +314,16 @@ public:
 
 	bool setOutputColumnOrder(const int* pOutputOrder, const int numColumns) {
 
-		if(!pOutputOrder || numColumns == 0)
+		if (!pOutputOrder || numColumns == 0)
 		{
 			return true;
 		}
 
 		this->pOutputOrder = new int[numColumns];
 		int validNumColumns = 0;
-		for(int i=0; i<numColumns; i++)
+		for (int i = 0; i < numColumns; i++)
 		{
-			if(pOutputOrder[i] == -1)
+			if (pOutputOrder[i] == -1)
 			{
 				continue;
 			}
@@ -348,7 +348,7 @@ public:
 		assert(bUseInternalBuffer || this->index < *pBufferSize);
 		return true;
 	}
-	void writeEmpty() {}
+	void writeEmpty() { }
 
 	bool writeSeparator(const void* /*data*/, const size_t /*size*/) {
 		assert(ppBuffer || bUseInternalBuffer);
@@ -370,7 +370,7 @@ public:
 		this->pBuffer[this->index] = 0; //null-delimiter
 		this->currentRowLength = this->index;
 
-		if(this->bNeedReorder)
+		if (this->bNeedReorder)
 		{
 			reorderOutputColumn();
 		}
@@ -395,12 +395,12 @@ public:
 private:
 	void reorderOutputColumn()
 	{
-		if(!pOutputOrder || numColumns == 0 || !pColumns)
+		if (!pOutputOrder || numColumns == 0 || !pColumns)
 		{
 			return;
 		}
 
-		for(int i=0; i<numColumns; i++)
+		for (int i = 0; i < numColumns; i++)
 		{
 			pColumnsBuffer[pOutputOrder[i]] = pColumns[i];
 		}
@@ -411,7 +411,7 @@ private:
 	{
 		assert(pBufferSize);
 		assert(ppBuffer);
-		if(requiredSize > *pBufferSize){
+		if (requiredSize > *pBufferSize){
 			delete [] pBuffer;
 			pBuffer = new char [requiredSize];
 			*ppBuffer = pBuffer;
