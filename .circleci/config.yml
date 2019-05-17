@@ -1,0 +1,31 @@
+# vim:set sts=2 ts=2 sw=2 et:
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+    steps:
+      - checkout
+      - restore_cache:
+          key: scala-{{ checksum "pom.xml" }}
+      - run: mvn package
+      - save_cache:
+          paths:
+            - ~/.m2/repository
+          key: scala-{{ checksum "pom.xml" }}
+      # from https://circleci.com/docs/2.0/collect-test-data/
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/test-results/junit
+            find . -type f -regex ".*/target/scalatest-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/test-results
+      - store_artifacts:
+          path: ~/test-results/junit
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
