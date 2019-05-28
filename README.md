@@ -3,12 +3,12 @@
 The ZDW archival format is for row-level, well-structured data (i.e., TSV with a schema file, as from a MySQL dump) that
 can be used in tandem with standard compression formats to yield highly efficient compression.
 It is best suited for optimizing storage footprint for archival storage,
-accessing large segments of the data, and outputting data row-by-row, as opposed to extracting only one or a relatively few columns.
+accessing large segments of the data, and outputting data row-by-row, as opposed to extracting only a few columns.
 
 ZDW uses a combination of:
 
 * A global, sorted dictionary of unique strings across all text columns
-* Numeric and text value support, as specified in an accompanying SQL-like schema file
+* Numeric and text values, as specified in an accompanying SQL-like schema file
 * Variable byte-size values for integers as well as dictionary indexes
 * Minimum value baseline per column for integers and dictionary indexes, to reduce the magnitude of the value needed on each row of that column
 * Bit-flagging repeat column values across consecutive rows (similar approach to run-length encoding, but applied on a per-row basis)
