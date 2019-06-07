@@ -180,6 +180,7 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 	, bShowBasicStatisticsOnly(false)
 	, bFailOnInvalidColumns(true)
 	, bExcludeSpecifiedColumns(false)
+	, bOutputEmptyMissingColumns(false)
 	, indexForVirtualBaseNameColumn(IGNORE)
 	, indexForVirtualRowColumn(IGNORE)
 	, columnType(NULL)
