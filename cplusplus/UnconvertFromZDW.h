@@ -106,7 +106,7 @@ public:
 	bool isFinished() const { return this->input->eof(); }
 	bool isReadOpen() const { return this->input && this->input->is_open(); }
 
-	static void printError(const std::string &exeName, const std::string &inFileName);
+	void printError(const std::string &exeName, const std::string &inFileName);
 
 	ERR_CODE readHeader();
 	bool setNamesOfColumnsToOutput(const std::string& csv_str, ZDW::COLUMN_INCLUSION_RULE inclusionRule);

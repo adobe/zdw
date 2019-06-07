@@ -147,7 +147,7 @@ ZDW::ERR_CODE unconvertFile(
 			return ZDW::OK;
 
 		fprintf(stderr, "Error code=%d (%s): ", eRet, UnconvertFromZDW_Base::ERR_CODE_TEXTS[eRet < ZDW::ERR_CODE_COUNT ? eRet : ZDW::ERR_CODE_COUNT]);
-		UnconvertFromZDW_Base::printError(exeName, !filename.empty() ? filename : "from stdin");
+		fprintf(stderr, "%s: %s failed\n\n", exeName, !filename.empty() ? filename.c_str() : "from stdin");
 	}
 
 	return eRet;
