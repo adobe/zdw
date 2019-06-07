@@ -273,6 +273,7 @@ public:
 		, pColumnsBuffer(NULL)
 		, pOutputOrder(NULL)
 		, numColumns(0)
+		, currentRowLength(0)
 		, neededBufferSize(neededBufferSize)
 		, bUseInternalBuffer(bUseInternalBuffer)
 		, bNeedReorder(false)
