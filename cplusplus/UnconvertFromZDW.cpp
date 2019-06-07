@@ -152,7 +152,7 @@ struct InsensitiveCompare
 //API maintenance -- old breakdown currently uses this text to detect whether zdw unconvert failed or not
 void UnconvertFromZDW_Base::printError(const string &exeName, const string &fileName)
 {
-	fprintf(stderr, "%s: %s failed\n\n", !exeName.empty() ? exeName.c_str() : "UnconvertFromZDW", fileName.c_str());
+	statusOutput(ERROR, "%s: %s failed\n\n", !exeName.empty() ? exeName.c_str() : "UnconvertFromZDW", fileName.c_str());
 }
 
 //***********************************************
@@ -479,7 +479,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDescToFile(
 	sprintf(outFileName, "%s/%s.desc%s", outputDir, filestub, ext ? ext : "");
 	FILE *out = fopen(outFileName, "w");
 	if (!out) {
-		fprintf(stderr, "%s: Could not open %s for writing\n", exeName.c_str(), outFileName);
+		statusOutput(ERROR, "%s: Could not open %s for writing\n", exeName.c_str(), outFileName);
 		return FILE_CREATION_ERR;
 	}
 
@@ -494,7 +494,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDescToStdOut(
 	FILE *out = stdout;
 	if (!out)
 	{
-		fprintf(stderr, "%s: Could not open STDOUT for writing\n", exeName.c_str());
+		statusOutput(ERROR, "%s: Could not open STDOUT for writing\n", exeName.c_str());
 		return FILE_CREATION_ERR;
 	}
 
@@ -708,7 +708,7 @@ void UnconvertFromZDW_Base::readLineLength()
 		}
 	}
 	if (this->bShowBasicStatisticsOnly) {
-		fprintf(this->statusOutput, "Max line length = %lu\n", static_cast<long unsigned>(this->exportFileLineLength));
+		this->statusOutput(INFO, "Max line length = %lu\n", static_cast<long unsigned>(this->exportFileLineLength));
 	}
 }
 
@@ -730,7 +730,7 @@ void UnconvertFromZDW_Base::readDictionary()
 	//Read dictionary.
 	if (this->version >= 9) {
 		if (!this->bQuiet)
-			fprintf(this->statusOutput, "Reading %" PF_LLU " byte dictionary\n", this->dictionarySize);
+			this->statusOutput(INFO, "Reading %" PF_LLU " byte dictionary\n", this->dictionarySize);
 		if (this->bShowBasicStatisticsOnly) {
 			skipBytes(this->dictionarySize);
 		} else {
@@ -753,7 +753,7 @@ void UnconvertFromZDW_Base::readDictionary()
 			memset(this->uniques, 0, (this->dictionarySize + 1) * sizeof(UniquesPart));
 		}
 		if (!this->bQuiet)
-			fprintf(this->statusOutput, "Reading %" PF_LLU " uniques\n", this->dictionarySize);
+			this->statusOutput(INFO, "Reading %" PF_LLU " uniques\n", this->dictionarySize);
 
 		if (this->bShowBasicStatisticsOnly) {
 			//Just skip through this data.
@@ -769,12 +769,11 @@ void UnconvertFromZDW_Base::readDictionary()
 				readBytes(this->uniques[c].m_PrevChar.c, indexSize);
 				if (this->bShowStatus && !(c % OUTPUT_MOD))
 				{
-					fprintf(this->statusOutput, "\r%u", c - 1);
-					fflush(this->statusOutput);
+					this->statusOutput(INFO, "\r%u", c - 1);
 				}
 			}
 			if (this->bShowStatus && indexSize != 0)
-				fprintf(this->statusOutput, "\r%u\n", c - 1);
+				this->statusOutput(INFO, "\r%u\n", c - 1);
 		}
 	}
 
@@ -836,7 +835,7 @@ void UnconvertFromZDW_Base::readVisitorDictionary()
 		this->visitors = new VisitorPart[this->numVisitors + 1];
 		memset(this->visitors, 0, (this->numVisitors + 1) * sizeof(VisitorPart));
 		if (!this->bQuiet)
-			fprintf(this->statusOutput, "Reading %" PF_LLU " visitor indices\n", this->numVisitors);
+			this->statusOutput(INFO, "Reading %" PF_LLU " visitor indices\n", this->numVisitors);
 
 		//Read visitor IDs
 		if (this->bShowBasicStatisticsOnly) {
@@ -853,12 +852,11 @@ void UnconvertFromZDW_Base::readVisitorDictionary()
 				readBytes(this->visitors[c].m_PrevID.c, vIndexSize);
 				if (this->bShowStatus && !(c % OUTPUT_MOD))
 				{
-					fprintf(this->statusOutput, "\r%u", c - 1);
-					fflush(this->statusOutput);
+					this->statusOutput(INFO, "\r%u", c - 1);
 				}
 			}
 			if (this->bShowStatus && vIndexSize != 0)
-				fprintf(this->statusOutput, "\r%u\n", c - 1);
+				this->statusOutput(INFO, "\r%u\n", c - 1);
 		}
 	}
 }
@@ -935,7 +933,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 		}
 	}
 	if (this->bShowBasicStatisticsOnly)
-		fprintf(this->statusOutput, "File version %d\n", static_cast<int>(this->version));
+		this->statusOutput(INFO, "File version %d\n", static_cast<int>(this->version));
 
 	//3. Parse column names.
 	this->columnNames.clear();
@@ -1318,7 +1316,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 
 	//5. Start parsing rows.
 	if (!this->bQuiet)
-		fprintf(this->statusOutput, "Reading %u rows\n", this->numLines);
+		this->statusOutput(INFO, "Reading %u rows\n", this->numLines);
 
 	//Show compression statistics when both test and statistics modes are set.
 	ULONGLONG equalityBitsSet = 0;
@@ -1424,14 +1422,13 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 			//Progress.
 			if (this->bShowStatus && !(this->rowsRead % 10000))
 			{
-				fprintf(this->statusOutput, "\r%u", this->rowsRead);
-				fflush(this->statusOutput);
+				this->statusOutput(INFO, "\r%u", this->rowsRead);
 			}
 		}
 
 		//Final progress for this block.
 		if (this->bShowStatus)
-			fprintf(this->statusOutput, "\r%u\n", this->rowsRead);
+			this->statusOutput(INFO, "\r%u\n", this->rowsRead);
 	}
 
 	//Finished unconverting this block.
@@ -1440,7 +1437,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 		(!this->bShowBasicStatisticsOnly || !isLastBlock()))
 	{
 		printError(this->exeName, getInputFilename(this->inFileName));
-		fprintf(this->statusOutput, "Rows unpacked (%u) does not match expected (%u)\n\n",
+		this->statusOutput(INFO, "Rows unpacked (%u) does not match expected (%u)\n\n",
 			this->rowsRead, this->numLines);
 		return ROW_COUNT_ERR;
 	}
@@ -1453,20 +1450,20 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 				++nonEmptyColumns;
 		}
 
-		fprintf(this->statusOutput, "Equality delta bits set: %" PF_LLU " (%0.1f%%) (rows=%u, columns=%u, bit vector width=%ld bytes, non-empty columns=%zu (%0.1f%%)\n",
+		this->statusOutput(INFO, "Equality delta bits set: %" PF_LLU " (%0.1f%%) (rows=%u, columns=%u, bit vector width=%ld bytes, non-empty columns=%zu (%0.1f%%)\n",
 			equalityBitsSet, equalityBitsSet*100 / float(this->numLines * this->numSetColumns * 8),
 			this->numLines, this->numColumnsInExportFile, this->numSetColumns,
 			nonEmptyColumns, nonEmptyColumns*100/float(this->numColumnsInExportFile));
 
 		for (size_t c = 0; c < nonEmptyColumns; ++c) {
-			fprintf(this->statusOutput, "%u ", equalityBitsInColumn[c]);
+			this->statusOutput(INFO, "%u ", equalityBitsInColumn[c]);
 		}
-		fprintf(this->statusOutput, "\n");
+		this->statusOutput(INFO, "\n");
 	}
 
 	if (isLastBlock() && !this->bQuiet && !this->bShowBasicStatisticsOnly)
 	{
-		fprintf(this->statusOutput, "%s %s\n\n",
+		this->statusOutput(INFO, "%s %s\n\n",
 				getInputFilename(this->inFileName).c_str(), this->bTestOnly ? "tested good" : "uncompressed");
 	}
 
@@ -1498,7 +1495,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 	}
 
 	if (!this->isReadOpen()) {
-		fprintf(stderr, "%s: Could not open %s for reading\n", this->exeName.c_str(), getInputFilename(this->inFileName).c_str());
+		this->statusOutput(ERROR, "%s: Could not open %s for reading\n", this->exeName.c_str(), getInputFilename(this->inFileName).c_str());
 		return FILE_OPEN_ERR;
 	}
 
@@ -1524,8 +1521,10 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 	if (!outputBasename)
 		outputBasename = filestub;
 
-	//When outputting status messages, where do they get outputted?
-	this->statusOutput = bStdout ? stderr : stdout;
+	if (!this->statusOutput) {
+		//When outputting status messages, where do they get outputted?
+		this->statusOutput = bStdout ? stdErrStatusOutputCallback : defaultStatusOutputCallback;
+	}
 
 	if (this->bShowStatus) {
 		const char *status;
@@ -1537,7 +1536,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 			status = "Outputting .desc file only";
 		else
 			status = "Processing";
-		fprintf(this->statusOutput, "\n%s %s\n", filestub, status);
+		this->statusOutput(INFO, "\n%s %s\n", filestub, status);
 	}
 
 	//1. Read header info.
@@ -1545,7 +1544,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 	if (eRet != OK)
 	{
 		if (eRet == UNSUPPORTED_ZDW_VERSION_ERR)
-			fprintf(stderr, "%s: %s is newer (version %d) than supported version (%d)\n%s\n", this->exeName.c_str(), filestub, this->version, UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION, this->version > 10000 ? "Maybe you are trying to read a tar or gzip file?\n" : "");
+			this->statusOutput(ERROR, "%s: %s is newer (version %d) than supported version (%d)\n%s\n", this->exeName.c_str(), filestub, this->version, UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION, this->version > 10000 ? "Maybe you are trying to read a tar or gzip file?\n" : "");
 		goto Done;
 	}
 
@@ -1555,7 +1554,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 		char textbuf[1024];
 		sprintf(textbuf, "%s/%s%s", outputDir, outputBasename, ext ? ext : "");
 		if (this->bShowStatus)
-			fprintf(this->statusOutput, "Writing %s\n", textbuf);
+			this->statusOutput(INFO, "Writing %s\n", textbuf);
 		//Open output stream.
 		if (bStdout) {
 			this->out = stdout;
@@ -1564,7 +1563,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 		}
 		if (!this->out)
 		{
-			fprintf(stderr, "%s: Could not open %s for writing\n", this->exeName.c_str(), textbuf);
+			this->statusOutput(ERROR, "%s: Could not open %s for writing\n", this->exeName.c_str(), textbuf);
 			eRet = FILE_CREATION_ERR;
 			goto Done;
 		}
@@ -1578,7 +1577,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 		eDescErr = bStdout ? this->outputDescToStdOut(this->columnNames) : this->outputDescToFile(this->columnNames, outputDir, outputBasename, ext);
 		if (eDescErr != OK)
 		{
-			fprintf(stderr, "%s: Could not extract the %s.desc%s file\n", this->exeName.c_str(), outputBasename, ext ? ext : "");
+			this->statusOutput(ERROR, "%s: Could not extract the %s.desc%s file\n", this->exeName.c_str(), outputBasename, ext ? ext : "");
 			eRet = eDescErr;
 			goto Done;
 		}
@@ -1627,7 +1626,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconv
 		this->readBytes(&dummy, 1, false); //a dummy read to set eof if we're at the end
 		if (!this->isFinished())
 		{
-			fprintf(this->statusOutput, "Did not reach EOF\n");
+			this->statusOutput(INFO, "Did not reach EOF\n");
 			eRet = ZDW_LONGER_THAN_EXPECTED_ERR;
 		}
 	}

@@ -23,6 +23,7 @@
 #include <strings.h>
 #include <unistd.h>
 
+using namespace ZDW;
 using std::strchr;
 using std::string;
 using std::vector;
@@ -154,7 +155,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 	assert(!src_filenames.empty());
 
 	if (!this->bQuiet)
-		printf("Unconverting %s back for validation...\n", zdwFile);
+		statusOutput(INFO, "Unconverting %s back for validation...\n", zdwFile);
 
 	//Call unconvertDWfile at the same path location where this app was invoked.
 	string zdw_path = exeName;
@@ -198,7 +199,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 	}
 
 	if (!this->bQuiet)
-		printf("VALIDATION COMMAND: %s\n", cmd);
+		statusOutput(INFO, "VALIDATION COMMAND: %s\n", cmd);
 	const int err = system(cmd);
 	return err == 0 ? OK : FILES_DIFFER;
 }
@@ -392,8 +393,7 @@ ConvertToZDW::INPUT_STATUS ConvertToZDW::parseInput(FILE* in)
 			++this->numRows;
 			if (!(this->numRows % 10000) && !this->bQuiet)
 			{
-				printf("\r%u rows", this->numRows);
-				fflush(stdout);
+				statusOutput(INFO, "\r%u rows", this->numRows);
 			}
 		}
 	}
@@ -416,7 +416,7 @@ size_t ConvertToZDW::writeLookupColumnStats(FILE* out, const size_t numColumns)
 		{
 			//column empty everywhere
 			columnSize[c] = 0;
-//			printf("%s not used\n", m_DWColumns[c].c_str());
+//			statusOutput(INFO, "%s not used\n", m_DWColumns[c].c_str());
 			continue;
 		}
 
@@ -452,7 +452,7 @@ size_t ConvertToZDW::writeLookupColumnStats(FILE* out, const size_t numColumns)
 				break;
 		}
 
-//		printf("%s type %d stored in %d bytes\n", m_DWColumns[c].c_str(), (int)m_ColumnType[c], columnSize[c]);
+//		statusOutput(INFO, "%s type %d stored in %d bytes\n", m_DWColumns[c].c_str(), (int)m_ColumnType[c], columnSize[c]);
 		usedColumn[numColumnsUsed] = c;
 		usedColumnMin[numColumnsUsed] = columnMin[c];
 		++numColumnsUsed;
@@ -581,8 +581,7 @@ ULONG ConvertToZDW::writeBlockRows(
 		cnt++;
 		if (!(cnt % 10000) && !this->bQuiet)
 		{
-			printf("\r%u", cnt);
-			fflush(stdout);
+			statusOutput(INFO, "\r%u", cnt);
 		}
 	}
 
@@ -649,7 +648,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	FILE *out = popen(cmd.c_str(), "w");
 	if (!out)
 	{
-		fprintf(stderr, "Could not open the process '%s' for writing!\n", cmd.c_str());
+		statusOutput(ERROR, "Could not open the process '%s' for writing!\n", cmd.c_str());
 		return FILE_CREATION_ERR;
 	}
 
@@ -735,14 +734,14 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 
 		if (!this->bQuiet) {
 			if (hadEnoughMemory)
-				printf("\nProcessing %s\n", filestub);
+				statusOutput(INFO, "\nProcessing %s\n", filestub);
 			else
-				printf("\nProcessing block %d of %s (%" PF_LLU " rows so far)\n", blocks, filestub, total_rows);
+				statusOutput(INFO, "\nProcessing block %d of %s (%" PF_LLU " rows so far)\n", blocks, filestub, total_rows);
 		}
 
 		//Scan input rows.  Build lookup tables.
 		if (!this->bQuiet)
-			printf("Compiling unique values\n");
+			statusOutput(INFO, "Compiling unique values\n");
 		this->numRows = 0;
 		memset(minmaxset, 0, numColumns);
 
@@ -770,7 +769,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 			case IS_DONE: hadEnoughMemory = true; break;
 			case IS_NOT_ENOUGH_MEMORY: hadEnoughMemory = false; break;
 			case IS_WRONG_NUM_OF_COLUMNS_ON_A_ROW:
-				fprintf(stderr, "\nRow %u had the problem\n", this->numRows + 1); //one past the last good row
+				statusOutput(ERROR, "\nRow %u had the problem\n", this->numRows + 1); //one past the last good row
 				return WRONG_NUM_OF_COLUMNS_ON_A_ROW;
 		}
 		if (this->bStreamingInput) {
@@ -781,16 +780,16 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		}
 
 		if (!this->bQuiet)
-			printf("\r%u rows\n", this->numRows);
+			statusOutput(INFO, "\r%u rows\n", this->numRows);
 
 		if (!this->numRows)
 		{
 			if (hadEnoughMemory)
 			{
 				assert(!totalCnt); //this should be during the first block
-				fprintf(stderr, "Empty data file -- nothing to process\n");
+				statusOutput(ERROR, "Empty data file -- nothing to process\n");
 			} else {
-				fprintf(stderr, "Not enough memory to run %s\n", exeName);
+				statusOutput(ERROR, "Not enough memory to run %s\n", exeName);
 				res = OUT_OF_MEMORY;
 				goto Done;
 			}
@@ -805,7 +804,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 
 		//Write dictionary.
 		if (!this->bQuiet)
-			printf("\nWriting dictionary:\n%u bytes being stored for %u unique entries.  Generating %d-byte offsets...\n",
+			statusOutput(INFO, "\nWriting dictionary:\n%u bytes being stored for %u unique entries.  Generating %d-byte offsets...\n",
 				this->uniques.getSize(), this->uniques.getNumEntries(), this->uniques.getBytesInOffset());
 		this->uniques.write(out); //side-effect: populates offsets for second pass below
 
@@ -829,14 +828,14 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 			fsetpos(f_in, &fbegin);
 		}
 		if (!this->bQuiet)
-			printf("\nWriting rows\n");
+			statusOutput(INFO, "\nWriting rows\n");
 
 		cnt = writeBlockRows(this->bStreamingInput ? p_second_in : f_in,
 				out, numColumns, numColumnsUsed);
 		totalCnt += cnt;
 
 		if (!this->bQuiet)
-			printf("\r%u\nDone with block %d -- cleaning up...\n", cnt, blocks);
+			statusOutput(INFO, "\r%u\nDone with block %d -- cleaning up...\n", cnt, blocks);
 
 		//Clean up.
 		this->uniques.clear();
@@ -869,9 +868,9 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		if (eValid == OK)
 		{
 			if (!this->bQuiet)
-				printf("%s GOOD\n", zdwFile);
+				statusOutput(INFO, "%s GOOD\n", zdwFile);
 		} else {
-			printf("%s BAD\n", zdwFile);
+			statusOutput(INFO, "%s BAD\n", zdwFile);
 			res = eValid;
 		}
 	}
@@ -890,7 +889,7 @@ Done:
 	{
 		//OUTPUT used by caller apps to grep specific information about what was produced
 		if (!this->bQuiet)
-			printf("Rows=%u\n", totalCnt);
+			statusOutput(INFO, "Rows=%u\n", totalCnt);
 
 		//Now rename the temp file to the final name.
 		string cmd = "mv ";
@@ -900,10 +899,10 @@ Done:
 		const int ret = system(cmd.c_str());
 		if (ret == 0) {
 			if (!this->bQuiet)
-				printf("Done\n");
+				statusOutput(INFO, "Done\n");
 		} else {
 			res = FILE_CREATION_ERR;
-			printf("Final create file failed -- you can use %s instead.\n", temp_outfile_name.c_str());
+			statusOutput(INFO, "Final create file failed -- you can use %s instead.\n", temp_outfile_name.c_str());
 		}
 	} else {
 		//Remove the temp file we were in the process of creating.

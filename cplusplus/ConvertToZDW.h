@@ -14,6 +14,7 @@
 #define CONVERTTOZDW_H
 
 #include "dictionary.h"
+#include "status_output.h"
 
 #include <string>
 #include <vector>
@@ -67,6 +68,7 @@ public:
 		, m_row(NULL)
 		, m_Version(CONVERT_ZDW_CURRENT_VERSION)
 		, minmaxset(NULL), columnSize(NULL)
+		, statusOutput(ZDW::defaultStatusOutputCallback)
 		, bQuiet(bQuiet)
 		, bTrimTrailingSpaces(false)
 		, bStreamingInput(bStreamingInput)
@@ -78,6 +80,8 @@ public:
 		delete[] minmaxset;
 		delete[] columnSize;
 	}
+
+	void setStatusOutputCallback(ZDW::StatusOutputCallback cb) { statusOutput = cb; }
 
 	void trimTrailingSpaces(bool val = true) { bTrimTrailingSpaces = val; }
 	const char* getInputFileExtension() const { return "sql"; }
@@ -155,6 +159,8 @@ private:
 	std::vector<ULONGLONG> columnVal;
 	std::vector<storageBytes> columnStoredVal[2];
 	std::vector<short> usedColumn;
+
+	ZDW::StatusOutputCallback statusOutput;
 
 	const bool bQuiet; //quiet running (no progress output messages)
 	bool bTrimTrailingSpaces;

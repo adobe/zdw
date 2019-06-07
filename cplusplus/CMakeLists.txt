@@ -18,6 +18,8 @@ add_library(zdw
 	getnextrow.h
 	stringheap.cpp
 	stringheap.h
+	status_output.cpp
+	status_output.h
 	includes.h
 	zdw_column_type_constants.h
 )
