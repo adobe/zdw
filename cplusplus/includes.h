@@ -60,4 +60,3 @@ union storageBytes
 #define DECIMAL_FACTOR (1000000000000.0)      //version 2-3
 
 #endif //INCLUDES_H
-
