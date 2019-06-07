@@ -65,9 +65,20 @@ const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "";
 const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16*1024; //16K default
 
 const char UnconvertFromZDW_Base::ERR_CODE_TEXTS[ZDW::ERR_CODE_COUNT + 1][30] = {
-	"OK","BAD_PARAMETER","GZREAD_FAILED","FILE_CREATION_ERR","FILE_OPEN_ERR","UNSUPPORTED_ZDW_VERSION_ERR",
-	"ZDW_LONGER_THAN_EXPECTED_ERR","UNEXPECTED_DESC_TYPE","ROW_COUNT_ERR","CORRUPTED_DATA_ERROR",
-	"HEADER_NOT_READ_YET","HEADER_ALREADY_READ_ERR","AT_END_OF_FILE","BAD_REQUESTED_COLUMN",
+	"OK",
+	"BAD_PARAMETER",
+	"GZREAD_FAILED",
+	"FILE_CREATION_ERR",
+	"FILE_OPEN_ERR",
+	"UNSUPPORTED_ZDW_VERSION_ERR",
+	"ZDW_LONGER_THAN_EXPECTED_ERR",
+	"UNEXPECTED_DESC_TYPE",
+	"ROW_COUNT_ERR",
+	"CORRUPTED_DATA_ERROR",
+	"HEADER_NOT_READ_YET",
+	"HEADER_ALREADY_READ_ERR",
+	"AT_END_OF_FILE",
+	"BAD_REQUESTED_COLUMN",
 	"NO_COLUMNS_TO_OUTPUT",
 	"PROCESSING_ERROR",
 	"UNSUPPORTED_OPERATION",
@@ -81,7 +92,8 @@ char const * const VIRTUAL_EXPORT_BASENAME_COLUMN_NAME = "virtual_export_basenam
 char const * const VIRTUAL_EXPORT_ROW_COLUMN_NAME = "virtual_export_row";
 
 namespace {
-	string getInputFilename(string filename) {
+	string getInputFilename(string filename)
+	{
 		return !filename.empty() ? filename : string("stdin");
 	}
 
@@ -128,8 +140,10 @@ namespace {
 }
 
 //*****************************
-struct InsensitiveCompare {
-	bool operator() (const string& lhs, const string& rhs) const {
+struct InsensitiveCompare
+{
+	bool operator() (const string& lhs, const string& rhs) const
+	{
 		return strcasecmp(lhs.c_str(), rhs.c_str()) < 0;
 	}
 };
@@ -391,8 +405,7 @@ bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
 			++index;
 			if (column_name == VIRTUAL_EXPORT_BASENAME_COLUMN_NAME && !this->bExcludeSpecifiedColumns) {
 				EnableVirtualExportBaseNameColumn();
-			}
-			else if (column_name == VIRTUAL_EXPORT_ROW_COLUMN_NAME && !this->bExcludeSpecifiedColumns) {
+			} else if (column_name == VIRTUAL_EXPORT_ROW_COLUMN_NAME && !this->bExcludeSpecifiedColumns) {
 				EnableVirtualExportRowColumn();
 			}
 		} else {
@@ -525,8 +538,8 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::GetSchema(
 	return OK;
 }
 
-string UnconvertFromZDW_Base::GetBaseNameForInFile(const string &inFileName) {
-
+string UnconvertFromZDW_Base::GetBaseNameForInFile(const string &inFileName)
+{
 	if (inFileName.empty()) {
 		//return "No Input Filename Found";
 		return string();
@@ -931,8 +944,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 		size_t p = 0;
 		do {
 			readBytes(&(row[++p]), 1);
-		}
-		while (row[p]);
+		} while (row[p]);
 		this->columnNames.push_back(row);
 		readBytes(row, 1); //pass null terminator
 	}
@@ -1052,7 +1064,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
 	if (UseVirtualExportRowColumn()) {
 		this->columnType[this->indexForVirtualRowColumn] = VIRTUAL_EXPORT_ROW;
 		if (this->columnCharSize) {
-		  this->columnCharSize[this->indexForVirtualRowColumn] = 0;
+			this->columnCharSize[this->indexForVirtualRowColumn] = 0;
 		}
 	}
 
@@ -1174,9 +1186,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 			//if (this->columnType[c] == VISID_HIGH) visid_low = 0;
 			//in order to write out a default value for visid_low, this logic should technically happen here, and in the "if (this->outputColumns[c] == IGNORE)" block above.
 			//However, since visid_low already defaults to 0 above, we don't actually need to execute this check and assignment and slow things down.
-		}
-		else
-		{
+		} else {
 			//3. Read new value of this column when it is not the same as that of the previous row.
 			storageBytes& val = this->columnVal[c];
 			if (this->setColumns[u / 8] & (1u << (u % 8))) //is the bit for this column set?
@@ -1633,19 +1643,23 @@ Done:
 	return eRet;
 }
 
-bool UnconvertFromZDW_Base::UseVirtualExportBaseNameColumn() const {
+bool UnconvertFromZDW_Base::UseVirtualExportBaseNameColumn() const
+{
 	return indexForVirtualBaseNameColumn != IGNORE;
 }
 
-void UnconvertFromZDW_Base::EnableVirtualExportBaseNameColumn() {
+void UnconvertFromZDW_Base::EnableVirtualExportBaseNameColumn()
+{
 	indexForVirtualBaseNameColumn = USE_VIRTUAL_COLUMN;
 }
 
-bool UnconvertFromZDW_Base::UseVirtualExportRowColumn() const {
+bool UnconvertFromZDW_Base::UseVirtualExportRowColumn() const
+{
 	return indexForVirtualRowColumn != IGNORE;
 }
 
-void UnconvertFromZDW_Base::EnableVirtualExportRowColumn() {
+void UnconvertFromZDW_Base::EnableVirtualExportRowColumn()
+{
 	indexForVirtualRowColumn = USE_VIRTUAL_COLUMN;
 }
 
@@ -1665,7 +1679,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(const char** ou
 	return getRow(NULL, NULL, outColumns, num);
 }
 
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(char ** buffer, size_t *size, const char** outColumns, size_t &numColumns)
+UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(char** buffer, size_t *size, const char** outColumns, size_t &numColumns)
 {
 	for (;;) {
 		switch (this->eState)
@@ -1723,9 +1737,9 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(char ** buffer,
 				readBytes(&dummy, 1, false); //a dummy read to set eof if we're at the end
 
 				setState(ZDW_END);
-			return isFinished() ? AT_END_OF_FILE : ZDW_LONGER_THAN_EXPECTED_ERR;
+				return isFinished() ? AT_END_OF_FILE : ZDW_LONGER_THAN_EXPECTED_ERR;
 			case ZDW_END:
-			return AT_END_OF_FILE;
+				return AT_END_OF_FILE;
 		}
 	}
 }

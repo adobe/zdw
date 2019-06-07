@@ -353,9 +353,7 @@ ConvertToZDW::INPUT_STATUS ConvertToZDW::parseInput(FILE* in)
 								columnMax[c] = val;
 							else if (val < columnMin[c])
 								columnMin[c] = val;
-						}
-						else
-						{
+						} else {
 							columnMax[c] = columnMin[c] = val;
 							minmaxset[c] = 1;
 						}
@@ -379,9 +377,7 @@ ConvertToZDW::INPUT_STATUS ConvertToZDW::parseInput(FILE* in)
 								columnMax[c] = val;
 							else if (val < columnMin[c])
 								columnMin[c] = val;
-						}
-						else
-						{
+						} else {
 							columnMax[c] = columnMin[c] = val;
 							minmaxset[c] = 1;
 						}
@@ -874,9 +870,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		{
 			if (!this->bQuiet)
 				printf("%s GOOD\n", zdwFile);
-		}
-		else
-		{
+		} else {
 			printf("%s BAD\n", zdwFile);
 			res = eValid;
 		}

@@ -275,8 +275,7 @@ public:
 		, bUseInternalBuffer(bUseInternalBuffer)
 	{ }
 	~UnconvertFromZDWToMemory()
-	{
-	}
+	{ }
 
 	UnconvertFromZDW_Base::ERR_CODE getRow(const char** outColumns);
 
