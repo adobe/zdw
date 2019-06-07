@@ -85,7 +85,8 @@ public:
 	}
 
 	//Returns: whether any more data can be returned
-	bool eof() const {
+	bool eof() const
+	{
 		if (this->bFromStdin) {
 			return feof(stdin) != 0;
 		} else {
@@ -102,13 +103,14 @@ public:
 
 	void reset() { index = length = 0; }
 
-	bool can_read_more_data() const {
+	bool can_read_more_data() const
+	{
 		if (eof())
 			return false;
 		if (is_gz_file) {
 			if (!this->gzFp)
 				return false;
-		} else if (!this->fp){
+		} else if (!this->fp) {
 			return false;
 		}
 		return true;
@@ -231,7 +233,8 @@ public:
 
 	//Skip ahead the indicated number of bytes without outputting any of the data.
 	//Returns: number of bytes skipped
-	size_t skip(size_t size) {
+	size_t skip(size_t size)
+	{
 		//Read blocks for speed.
 		static const size_t BLOCK_SIZE = 16;
 		char tempBlock[BLOCK_SIZE];
@@ -258,7 +261,7 @@ public:
 		if (is_gz_file) {
 			if (!this->gzFp)
 				return 0;
-		} else if (!this->fp){
+		} else if (!this->fp) {
 			return 0;
 		}
 

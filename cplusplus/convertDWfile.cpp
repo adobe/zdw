@@ -203,9 +203,7 @@ int main(int argc, char* argv[])
 				if (res != ConvertToZDW::OK)
 				{
 					fprintf(stderr, "Could not remove original %s file because conversion was not good\n", filestub);
-				}
-				else
-				{
+				} else {
 					//Delete files converted from.
 					sprintf(filename, "%s.desc.%s", filestub, convert.getInputFileExtension());
 					unlink(filename);

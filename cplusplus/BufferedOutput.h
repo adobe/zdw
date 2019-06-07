@@ -28,7 +28,8 @@ private:
 	BufferedOrderedOutput &operator=(BufferedOrderedOutput const &);
 
 	//Used for reordering column outputs.
-	class ByteBuffer {
+	class ByteBuffer
+	{
 	public:
 		ByteBuffer(int unsigned startSize = 16)
 		: pBuffer(new char[startSize])
@@ -263,7 +264,6 @@ extern int compareByOutputIndex(const void* first, const void* second);
 class BufferedOutputInMem
 {
 public:
-
 	BufferedOutputInMem(size_t neededBufferSize, bool bUseInternalBuffer = true)
 		: ppBuffer(NULL)
 		, pBuffer(NULL)
@@ -411,7 +411,7 @@ private:
 	{
 		assert(pBufferSize);
 		assert(ppBuffer);
-		if (requiredSize > *pBufferSize){
+		if (requiredSize > *pBufferSize) {
 			delete [] pBuffer;
 			pBuffer = new char [requiredSize];
 			*ppBuffer = pBuffer;
