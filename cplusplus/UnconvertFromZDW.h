@@ -17,6 +17,7 @@
 
 #include "BufferedInput.h"
 #include "BufferedOutput.h"
+#include "status_output.h"
 
 #include <map>
 #include <string>
@@ -96,6 +97,8 @@ public:
 			const bool bShowStatus = true, const bool bQuiet = true,
 			const bool bTestOnly = false, const bool bOutputDescFileOnly = false);
 	virtual ~UnconvertFromZDW_Base();
+
+	void setStatusOutputCallback(ZDW::StatusOutputCallback cb) { statusOutput = cb; }
 
 	//Common API.
 	std::vector<std::string> getColumnNames() const { return this->columnNames; }
@@ -189,7 +192,7 @@ protected:
 	ULONG rowsRead;
 	long numSetColumns;
 
-	FILE *statusOutput;
+	ZDW::StatusOutputCallback statusOutput;
 
 	//State info to assist API simplicity.
 	enum STATE
@@ -273,7 +276,9 @@ public:
 		: UnconvertFromZDW<BufferedOutputInMem>(inFileName, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly)
 		, num_output_columns(0)
 		, bUseInternalBuffer(bUseInternalBuffer)
-	{ }
+	{
+		statusOutput = ZDW::defaultStatusOutputCallback;
+	}
 	~UnconvertFromZDWToMemory()
 	{ }
 
