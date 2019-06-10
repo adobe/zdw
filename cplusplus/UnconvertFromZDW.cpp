@@ -1501,6 +1501,11 @@ ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
 		this->exeName = binaryName;
 	}
 
+	if (!this->statusOutput) {
+		//When outputting status messages, where do they get outputted?
+		this->statusOutput = bStdout ? stdErrStatusOutputCallback : defaultStatusOutputCallback;
+	}
+
 	if (!this->isReadOpen()) {
 		this->statusOutput(ERROR, "%s: Could not open %s for reading\n", this->exeName.c_str(), getInputFilename(this->inFileName).c_str());
 		return FILE_OPEN_ERR;
@@ -1527,11 +1532,6 @@ ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
 	//If no output filename is specified, use the input filename as the default.
 	if (!outputBasename)
 		outputBasename = filestub;
-
-	if (!this->statusOutput) {
-		//When outputting status messages, where do they get outputted?
-		this->statusOutput = bStdout ? stdErrStatusOutputCallback : defaultStatusOutputCallback;
-	}
 
 	if (this->bShowStatus) {
 		const char *status;
