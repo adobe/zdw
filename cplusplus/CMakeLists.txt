@@ -10,6 +10,7 @@ add_library(zdw
 	memory.h
 	BufferedInput.h
 	BufferedOutput.cpp
+	BufferedOutput.h
 	ConvertToZDW.cpp
 	ConvertToZDW.h
 	dictionary.cpp
