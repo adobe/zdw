@@ -4,25 +4,25 @@ project(zdw)
 add_definitions(-D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS -Wall -Wold-style-cast)
 
 add_library(zdw
-	UnconvertFromZDW.cpp
-	UnconvertFromZDW.h
-	memory.cpp
-	memory.h
-	BufferedInput.h
 	BufferedOutput.cpp
-	BufferedOutput.h
 	ConvertToZDW.cpp
 	ConvertToZDW.h
+	UnconvertFromZDW.cpp
 	dictionary.cpp
 	dictionary.h
 	getnextrow.cpp
 	getnextrow.h
+	memory.cpp
+	memory.h
+	status_output.cpp
 	stringheap.cpp
 	stringheap.h
-	status_output.cpp
-	status_output.h
-	includes.h
 	zdw_column_type_constants.h
+	zdw/BufferedInput.h
+	zdw/BufferedOutput.h
+	zdw/UnconvertFromZDW.h
+	zdw/includes.h
+	zdw/status_output.h
 )
 
 add_executable(convertDWfile

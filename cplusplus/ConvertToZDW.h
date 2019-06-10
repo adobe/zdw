@@ -14,7 +14,7 @@
 #define CONVERTTOZDW_H
 
 #include "dictionary.h"
-#include "status_output.h"
+#include "zdw/status_output.h"
 
 #include <string>
 #include <vector>

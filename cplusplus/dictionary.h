@@ -13,7 +13,7 @@
 #ifndef DICTIONARY_H
 #define DICTIONARY_H
 
-#include "includes.h"
+#include "zdw/includes.h"
 #include "stringheap.h"
 
 #include <cstring>
