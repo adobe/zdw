@@ -27,41 +27,44 @@
 #include <boost/scoped_ptr.hpp>
 
 
-namespace ZDW {
-	//Error codes
-	enum ERR_CODE
-	{
-		OK=0, //don't change value API
-		BAD_PARAMETER=1,
-		GZREAD_FAILED=2,
-		FILE_CREATION_ERR=3,
-		FILE_OPEN_ERR=4,
-		UNSUPPORTED_ZDW_VERSION_ERR=5,
-		ZDW_LONGER_THAN_EXPECTED_ERR=6,
-		UNEXPECTED_DESC_TYPE=7,
-		ROW_COUNT_ERR=8,
-		CORRUPTED_DATA_ERROR=9,
-		HEADER_NOT_READ_YET=10,
-		HEADER_ALREADY_READ_ERR=11,
-		AT_END_OF_FILE=12,
-		BAD_REQUESTED_COLUMN=13,
-		NO_COLUMNS_TO_OUTPUT=14,
-		PROCESSING_ERROR=15,
-		UNSUPPORTED_OPERATION=16,
+namespace adobe {
+namespace zdw {
 
-		ERR_CODE_COUNT
-	};
+//Error codes
+enum ERR_CODE
+{
+	OK=0, //don't change value API
+	BAD_PARAMETER=1,
+	GZREAD_FAILED=2,
+	FILE_CREATION_ERR=3,
+	FILE_OPEN_ERR=4,
+	UNSUPPORTED_ZDW_VERSION_ERR=5,
+	ZDW_LONGER_THAN_EXPECTED_ERR=6,
+	UNEXPECTED_DESC_TYPE=7,
+	ROW_COUNT_ERR=8,
+	CORRUPTED_DATA_ERROR=9,
+	HEADER_NOT_READ_YET=10,
+	HEADER_ALREADY_READ_ERR=11,
+	AT_END_OF_FILE=12,
+	BAD_REQUESTED_COLUMN=13,
+	NO_COLUMNS_TO_OUTPUT=14,
+	PROCESSING_ERROR=15,
+	UNSUPPORTED_OPERATION=16,
 
-	enum COLUMN_INCLUSION_RULE
-	{
-		FAIL_ON_INVALID_COLUMN,
-		SKIP_INVALID_COLUMN,
-		EXCLUDE_SPECIFIED_COLUMNS,
-		PROVIDE_EMPTY_MISSING_COLUMNS
-	};
-}
+	ERR_CODE_COUNT
+};
 
-//*****************************
+enum COLUMN_INCLUSION_RULE
+{
+	FAIL_ON_INVALID_COLUMN,
+	SKIP_INVALID_COLUMN,
+	EXCLUDE_SPECIFIED_COLUMNS,
+	PROVIDE_EMPTY_MISSING_COLUMNS
+};
+
+
+namespace internal {
+
 #define BLOCKSIZE (8)
 union charBlock
 {
@@ -72,14 +75,17 @@ union charBlock
 struct UniquesPart
 {
 	charBlock m_Char;
-	indexBytes m_PrevChar;
+	internal::indexBytes m_PrevChar;
 };
 
 struct VisitorPart
 {
 	ULONGLONG m_VID;
-	indexBytes m_PrevID;
+	internal::indexBytes m_PrevID;
 };
+
+} // namespace internal
+
 
 //Contains most of the algorithmic functionality.
 class UnconvertFromZDW_Base
@@ -90,15 +96,14 @@ public:
 	static const int UNCONVERT_ZDW_VERSION;
 	static const char UNCONVERT_ZDW_VERSION_TAIL[3];
 
-	typedef ZDW::ERR_CODE ERR_CODE;
-	static const char ERR_CODE_TEXTS[ZDW::ERR_CODE_COUNT + 1][30];
+	static const char ERR_CODE_TEXTS[ERR_CODE_COUNT + 1][30];
 
 	UnconvertFromZDW_Base(const std::string &inFileName,
 			const bool bShowStatus = true, const bool bQuiet = true,
 			const bool bTestOnly = false, const bool bOutputDescFileOnly = false);
 	virtual ~UnconvertFromZDW_Base();
 
-	void setStatusOutputCallback(ZDW::StatusOutputCallback cb) { statusOutput = cb; }
+	void setStatusOutputCallback(StatusOutputCallback cb) { statusOutput = cb; }
 
 	//Common API.
 	std::vector<std::string> getColumnNames() const { return this->columnNames; }
@@ -112,8 +117,8 @@ public:
 	void printError(const std::string &exeName, const std::string &inFileName);
 
 	ERR_CODE readHeader();
-	bool setNamesOfColumnsToOutput(const std::string& csv_str, ZDW::COLUMN_INCLUSION_RULE inclusionRule);
-	bool setNamesOfColumnsToOutput(const std::vector<std::string> &csv_vector, ZDW::COLUMN_INCLUSION_RULE inclusionRule);
+	bool setNamesOfColumnsToOutput(const std::string& csv_str, COLUMN_INCLUSION_RULE inclusionRule);
+	bool setNamesOfColumnsToOutput(const std::vector<std::string> &csv_vector, COLUMN_INCLUSION_RULE inclusionRule);
 	void showBasicStatisticsOnly(bool bVal = true) { this->bShowBasicStatisticsOnly = bVal; }
 
 	ERR_CODE GetSchema(std::ostream& stream);
@@ -144,8 +149,8 @@ protected:
 	ULONG virtualLineLength;
 	std::vector<char *> dictionary; //version 9+
 	std::vector<ULONG> dictionary_memblock_size;
-	UniquesPart *uniques;  //version 1-8
-	VisitorPart *visitors; //version 1-7
+	internal::UniquesPart *uniques;  //version 1-8
+	internal::VisitorPart *visitors; //version 1-7
 
 	USHORT version;
 	double decimalFactor;  //version 1-3
@@ -187,12 +192,12 @@ protected:
 	//Used when unpacking a block.
 	UCHAR *columnSize, *setColumns;
 	ULONGLONG *columnBase;
-	storageBytes *columnVal;
+	internal::storageBytes *columnVal;
 	ULONGLONG dictionarySize, numVisitors;
 	ULONG rowsRead;
 	long numSetColumns;
 
-	ZDW::StatusOutputCallback statusOutput;
+	StatusOutputCallback statusOutput;
 
 	//State info to assist API simplicity.
 	enum STATE
@@ -259,7 +264,7 @@ public:
 		, out(NULL)
 	{ }
 
-	ZDW::ERR_CODE unconvert(const char* exeName, const char* outputBasename, const char* ext, const char* outputDir, bool bStdout);
+	ERR_CODE unconvert(const char* exeName, const char* outputBasename, const char* ext, const char* outputDir, bool bStdout);
 
 private:
 	FILE *out;
@@ -277,16 +282,16 @@ public:
 		, num_output_columns(0)
 		, bUseInternalBuffer(bUseInternalBuffer)
 	{
-		statusOutput = ZDW::defaultStatusOutputCallback;
+		statusOutput = defaultStatusOutputCallback;
 	}
 	~UnconvertFromZDWToMemory()
 	{ }
 
-	UnconvertFromZDW_Base::ERR_CODE getRow(const char** outColumns);
+	ERR_CODE getRow(const char** outColumns);
 
-	UnconvertFromZDW_Base::ERR_CODE getRow(char ** buffer, size_t *size, const char** outColumns, size_t &numColumns);
+	ERR_CODE getRow(char ** buffer, size_t *size, const char** outColumns, size_t &numColumns);
 
-	UnconvertFromZDW_Base::ERR_CODE getNumOutputColumns(size_t& num);
+	ERR_CODE getNumOutputColumns(size_t& num);
 
 	size_t getCurrentRowLength();
 
@@ -300,12 +305,15 @@ public:
 	bool OutputDescToFile(const std::string &outputDir);
 
 protected:
-	UnconvertFromZDW_Base::ERR_CODE handleZDWParseBlockHeader();
+	ERR_CODE handleZDWParseBlockHeader();
 
 private:
 	boost::scoped_ptr<BufferedOutputInMem> pBufferedOutput;
 	size_t num_output_columns;
 	bool bUseInternalBuffer;
 };
+
+} // namespace zdw
+} // namespace adobe
 
 #endif

@@ -21,7 +21,12 @@
 #include <string>
 
 
-//********************************************************
+namespace adobe {
+namespace zdw {
+
+
+namespace internal {
+
 struct cstringComp
 {
 	bool operator() (const char* const& lhs, const char* const& rhs) const { return std::strcmp(lhs, rhs) < 0; }
@@ -29,6 +34,9 @@ struct cstringComp
 
 typedef std::map<const char*, ULONG, cstringComp> DictionaryT;
 //typedef std::map<std::string, ULONG> DictionaryT; //replaced with custom memory management
+
+} // namespace internal
+
 
 //********************************************************
 class Dictionary
@@ -49,9 +57,12 @@ public:
 	void write(FILE* f); //populates values in stringOffsets
 
 private:
-	DictionaryT stringOffsets;
+	internal::DictionaryT stringOffsets;
 	StringHeap stringHeap;
 	ULONG size;
 };
+
+} // namespace zdw
+} // namespace adobe
 
 #endif

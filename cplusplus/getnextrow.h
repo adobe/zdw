@@ -15,8 +15,13 @@
 
 #include "includes.h"
 
-namespace Common {
-	int GetNextRow(FILE* f, char*& row, ULONG& rowSize);
-};
+
+namespace adobe {
+namespace zdw {
+
+int GetNextRow(FILE* f, char*& row, ULONG& rowSize);
+
+} // namespace zdw
+} // namespace adobe
 
 #endif

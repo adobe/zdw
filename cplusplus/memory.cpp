@@ -16,7 +16,16 @@
 
 using std::string;
 
+
+namespace {
+
 const float DEFAULT_PROCESS_MEMORY_THRESHOLD = 3.0f*1024; //in MB
+
+}
+
+
+namespace adobe {
+namespace zdw {
 
 float Memory::memory_threshold_mb = DEFAULT_PROCESS_MEMORY_THRESHOLD;
 
@@ -70,4 +79,7 @@ bool Memory::CanAllocateMemory(const long long unsigned memNeeded)
 
 	return process_memory_usage() + memNeededMB < get_memory_usage_limit_MB();
 }
+
+} // namespace zdw
+} // namespace adobe
 

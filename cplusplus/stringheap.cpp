@@ -17,7 +17,16 @@
 #include <cstring>
 #include <stdio.h>
 
+
+namespace {
+
 const size_t HEAP_BLOCK_SIZE = 64 * 1024 * 1024;
+
+}
+
+
+namespace adobe {
+namespace zdw {
 
 char* StringHeap::copyToHeap(const char* str, const size_t len)
 {
@@ -89,4 +98,7 @@ void StringHeap::FreeMemory()
 
 	this->low_on_memory = false;
 }
+
+} // namespace zdw
+} // namespace adobe
 

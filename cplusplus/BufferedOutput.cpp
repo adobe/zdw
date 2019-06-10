@@ -12,6 +12,10 @@
 
 #include "BufferedOutput.h"
 
+
+namespace adobe {
+namespace zdw {
+
 int compareByIndex(const void* first, const void* second)
 {
 	return (reinterpret_cast<const OutputOrderIndexer *>(first))->index
@@ -23,4 +27,7 @@ int compareByOutputIndex(const void* first, const void* second)
 	return (reinterpret_cast<const OutputOrderIndexer *>(first))->outputIndex
 			- (reinterpret_cast<const OutputOrderIndexer *>(second))->outputIndex;
 }
+
+} // namespace zdw
+} // namespace adobe
 

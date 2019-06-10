@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 using namespace std;
+using namespace adobe::zdw;
 
 
 //*****************************
@@ -49,7 +50,8 @@ void processLine(const char** outColumns, size_t numColumns)
 	printf("\n");
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
 	int fileBeginIndex = 1;
 	if (argc < 2)
 	{
@@ -67,7 +69,6 @@ int main(int argc, char* argv[]) {
 		}
 		namesOfColumnsToOutput = argv[2];
 		fileBeginIndex = 3;
-
 	}
 
 	//Each iteration unconverts one ZDW input file.
@@ -76,13 +77,13 @@ int main(int argc, char* argv[]) {
 		UnconvertFromZDWToMemory unconvert(argv[i], false); //test in-memory API
 		if (!namesOfColumnsToOutput.empty())
 		{
-			unconvert.setNamesOfColumnsToOutput(namesOfColumnsToOutput, ZDW::SKIP_INVALID_COLUMN);
+			unconvert.setNamesOfColumnsToOutput(namesOfColumnsToOutput, SKIP_INVALID_COLUMN);
 		}
 
-		ZDW::ERR_CODE eRet;
+		ERR_CODE eRet;
 
 		eRet = unconvert.readHeader();
-		if (eRet != ZDW::OK)
+		if (eRet != OK)
 		{
 			fprintf(stderr, "Error %i\n", eRet);
 			return eRet;
@@ -93,7 +94,7 @@ int main(int argc, char* argv[]) {
 
 		size_t numColumns;
 		eRet = unconvert.getNumOutputColumns(numColumns);
-		if (eRet != ZDW::OK)
+		if (eRet != OK)
 		{
 			fprintf(stderr, "Error %i\n", eRet);
 			return eRet;
@@ -107,10 +108,10 @@ int main(int argc, char* argv[]) {
 		while (!unconvert.isFinished()) {
 			eRet = unconvert.getRow(&buffer, &lineLength, outColumns, numColumns);
 			switch (eRet) {
-				case ZDW::OK:
+				case OK:
 					processLine(outColumns, numColumns);
 					break;
-				case ZDW::AT_END_OF_FILE:
+				case AT_END_OF_FILE:
 					//successful completion
 					assert(unconvert.isFinished());
 					break;

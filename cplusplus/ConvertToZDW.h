@@ -20,6 +20,9 @@
 #include <vector>
 
 
+namespace adobe {
+namespace zdw {
+
 //************************************************
 class ConvertToZDW
 {
@@ -68,7 +71,7 @@ public:
 		, m_row(NULL)
 		, m_Version(CONVERT_ZDW_CURRENT_VERSION)
 		, minmaxset(NULL), columnSize(NULL)
-		, statusOutput(ZDW::defaultStatusOutputCallback)
+		, statusOutput(defaultStatusOutputCallback)
 		, bQuiet(bQuiet)
 		, bTrimTrailingSpaces(false)
 		, bStreamingInput(bStreamingInput)
@@ -81,7 +84,7 @@ public:
 		delete[] columnSize;
 	}
 
-	void setStatusOutputCallback(ZDW::StatusOutputCallback cb) { statusOutput = cb; }
+	void setStatusOutputCallback(StatusOutputCallback cb) { statusOutput = cb; }
 
 	void trimTrailingSpaces(bool val = true) { bTrimTrailingSpaces = val; }
 	const char* getInputFileExtension() const { return "sql"; }
@@ -157,10 +160,10 @@ private:
 	std::vector<ULONGLONG> columnMax;
 	char unsigned *columnSize;
 	std::vector<ULONGLONG> columnVal;
-	std::vector<storageBytes> columnStoredVal[2];
+	std::vector<internal::storageBytes> columnStoredVal[2];
 	std::vector<short> usedColumn;
 
-	ZDW::StatusOutputCallback statusOutput;
+	StatusOutputCallback statusOutput;
 
 	const bool bQuiet; //quiet running (no progress output messages)
 	bool bTrimTrailingSpaces;
@@ -168,5 +171,8 @@ private:
 	const bool bStreamingInput; //if set, reading data from stdin
 	FILE *tmp_fp; //used when streaming data in -- stores data for second pass
 };
+
+} // namespace zdw
+} // namespace adobe
 
 #endif

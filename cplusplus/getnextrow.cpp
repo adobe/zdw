@@ -15,11 +15,15 @@
 #include <assert.h>
 #include <string.h>
 
+
+namespace adobe {
+namespace zdw {
+
 // Reads a row from the given file into row, of allocated length rowSize.
 // If row is too small to fit the entire line of text, it is reallocated to a larger rowSize.
 //
 //Returns: length of row
-int Common::GetNextRow(
+int GetNextRow(
 	FILE* f,
 	char*& row,   //(in/out) row text
 	ULONG& rowSize) //(in/out) size of longest row encountered so far
@@ -78,4 +82,7 @@ int Common::GetNextRow(
 	assert(len < rowSize); //otherwise we had a buffer overflow above
 	return len;
 }
+
+} // namespace zdw
+} // namespace adobe
 

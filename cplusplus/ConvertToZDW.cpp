@@ -23,7 +23,7 @@
 #include <strings.h>
 #include <unistd.h>
 
-using namespace ZDW;
+using namespace adobe::zdw::internal;
 using std::strchr;
 using std::string;
 using std::vector;
@@ -50,6 +50,21 @@ using std::vector;
 //version 9b -- Allowing > 2040 columns to be set in a block (via fixing an integer overflow)
 //version 10 -- add support for mediumtext and longtext columns
 
+
+namespace {
+
+static const int unsigned BAD_FIELD = static_cast<int unsigned>(-1);
+
+
+inline void get_next_column(char*& col);
+inline bool dump_trimmed_row_to_temp_file(FILE* fp, const vector<char*>& rowColumns);
+
+}
+
+
+namespace adobe {
+namespace zdw {
+
 const int ConvertToZDW::CONVERT_ZDW_CURRENT_VERSION = 10;
 const char ConvertToZDW::CONVERT_ZDW_VERSION_TAIL[3] = "";
 
@@ -61,11 +76,6 @@ const char ConvertToZDW::ERR_CODE_TEXTS[ERR_CODE_COUNT][30] = {
 	"BAD_PARAMETER","TOO_MANY_INPUT_FILES","NO_INPUT_FILES","CANT_OPEN_TEMP_FILE",
 	"Unknown error"
 };
-
-#define HIGH (0)
-#define LOW  (1)
-
-static const int unsigned BAD_FIELD = static_cast<int unsigned>(-1);
 
 //Parses the .desc.sql file to determine column names and sql types
 //
@@ -204,50 +214,6 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 	return err == 0 ? OK : FILES_DIFFER;
 }
 
-//Skip over embedded tabs.
-inline void get_next_column(char*& col)
-{
-	col = strchr(col, '\t'); // embedded tabs are escaped by an odd number of backslashes.
-	if (col && col[-1] == '\\')
-	{
-		char* slash = col - 2;
-		while (*slash == '\\')
-			--slash;
-		while (col && ((col - slash) % 2) == 0)
-		{
-			col = strchr(col + 1, '\t');
-			if (col)
-			{
-				slash = col - 1;
-				while (*slash == '\\')
-					--slash;
-			}
-		}
-	}
-}
-
-inline bool dump_trimmed_row_to_temp_file(FILE* fp, const vector<char*>& rowColumns)
-{
-	const int size_minus_one = rowColumns.size() - 1;
-	char *field;
-	size_t len;
-	for (int i = 0; i < size_minus_one; ++i) {
-		field = rowColumns[i];
-		len = strlen(field);
-		if (len > 0 && fwrite(field, 1, len, fp) != len)
-			return false; //has an error writing to the temp file
-		if (fwrite("\t", 1, 1, fp) != 1) //reinsert tab separators
-			return false;
-	}
-	field = rowColumns[size_minus_one];
-	len = strlen(field);
-	if (len > 0 && fwrite(field, 1, len, fp) != len)
-		return false;
-	if (fwrite("\n", 1, 1, fp) != 1) //reinsert trailing newline that was truncated
-		return false;
-	return true;
-}
-
 //Returns: number of columns in returned row
 size_t ConvertToZDW::GetDataRow(
 	FILE* f, char *&row,
@@ -255,7 +221,7 @@ size_t ConvertToZDW::GetDataRow(
 {
 	rowColumns.clear();
 
-	if (Common::GetNextRow(f, row, m_LongestLine))
+	if (GetNextRow(f, row, m_LongestLine))
 	{
 		//If we're streaming data in, store this data to a temp file
 		if (this->tmp_fp &&
@@ -988,5 +954,57 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 		fclose(in);
 
 	return conversionResult;
+}
+
+} // namespace zdw
+} // namespace adobe
+
+
+namespace {
+
+//Skip over embedded tabs.
+inline void get_next_column(char*& col)
+{
+	col = strchr(col, '\t'); // embedded tabs are escaped by an odd number of backslashes.
+	if (col && col[-1] == '\\')
+	{
+		char* slash = col - 2;
+		while (*slash == '\\')
+			--slash;
+		while (col && ((col - slash) % 2) == 0)
+		{
+			col = strchr(col + 1, '\t');
+			if (col)
+			{
+				slash = col - 1;
+				while (*slash == '\\')
+					--slash;
+			}
+		}
+	}
+}
+
+inline bool dump_trimmed_row_to_temp_file(FILE* fp, const vector<char*>& rowColumns)
+{
+	const int size_minus_one = rowColumns.size() - 1;
+	char *field;
+	size_t len;
+	for (int i = 0; i < size_minus_one; ++i) {
+		field = rowColumns[i];
+		len = strlen(field);
+		if (len > 0 && fwrite(field, 1, len, fp) != len)
+			return false; //has an error writing to the temp file
+		if (fwrite("\t", 1, 1, fp) != 1) //reinsert tab separators
+			return false;
+	}
+	field = rowColumns[size_minus_one];
+	len = strlen(field);
+	if (len > 0 && fwrite(field, 1, len, fp) != len)
+		return false;
+	if (fwrite("\n", 1, 1, fp) != 1) //reinsert trailing newline that was truncated
+		return false;
+	return true;
+}
+
 }
 

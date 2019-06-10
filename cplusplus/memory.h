@@ -13,6 +13,10 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+
+namespace adobe {
+namespace zdw {
+
 class Memory
 {
 	Memory(); //unimplemented
@@ -26,5 +30,8 @@ public:
 	static double process_memory_usage();
 	static bool set_memory_threshold_MB(const float mb);
 };
+
+} // namespace zdw
+} // namespace adobe
 
 #endif

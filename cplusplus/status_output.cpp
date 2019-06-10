@@ -15,7 +15,8 @@
 #include <stdio.h>
 
 
-namespace ZDW {
+namespace adobe {
+namespace zdw {
 
 // ERROR to stderr, INFO to stdout
 void defaultStatusOutputCallback(const StatusOutputLevel level, const char *format, ...)
@@ -39,5 +40,6 @@ void stdErrStatusOutputCallback(const StatusOutputLevel level, const char *forma
 	va_end(argptr);
 }
 
-}
+} // namespace zdw
+} // namespace adobe
 

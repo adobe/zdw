@@ -35,12 +35,22 @@
 // FIXME: Shift to <cstdint> once on C++11
 #include <stdint.h>
 
+#define DECIMAL_FACTOR_VERSION_1 (1000000000) //version 1
+#define DECIMAL_FACTOR (1000000000000.0)      //version 2-3
+
+
+namespace adobe {
+namespace zdw {
+
 typedef int64_t SLONGLONG;
 typedef uint64_t ULONGLONG;
 
 typedef uint8_t UCHAR;
 typedef uint16_t USHORT;
 typedef uint32_t ULONG;
+
+
+namespace internal {
 
 union indexBytes
 {
@@ -54,9 +64,8 @@ union storageBytes
 	ULONGLONG n;
 };
 
-#define MAX_ULONG (4294967295UL)
-
-#define DECIMAL_FACTOR_VERSION_1 (1000000000) //version 1
-#define DECIMAL_FACTOR (1000000000000.0)      //version 2-3
+} // namespace internal
+} // namespace zdw
+} // namespace adobe
 
 #endif //INCLUDES_H
