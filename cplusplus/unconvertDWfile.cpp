@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <algorithm>
 
+using namespace adobe::zdw;
 using std::string;
 
 
@@ -80,7 +81,7 @@ int badParam(char* exeName, const char* paramStr)
 {
 	fprintf(stderr, "%s: Unknown parameter '%s'\n\n", exeName, paramStr);
 	fprintf(stderr, "    Run with --help for usage info.\n");
-	return ZDW::BAD_PARAMETER;
+	return BAD_PARAMETER;
 }
 
 //************************************
@@ -89,24 +90,24 @@ int missingParam(char* exeName, const char* paramStr)
 {
 	fprintf(stderr, "%s: Missing argument after parameter '%s'\n\n", exeName, paramStr);
 	fprintf(stderr, "    Run with --help for usage info.\n");
-	return ZDW::BAD_PARAMETER;
+	return BAD_PARAMETER;
 }
 
 int extraOption(char* exeName, const char* optionStr)
 {
 	fprintf(stderr, "%s: Extra option '%s' not allowed in tandem with other mutually exclusive options.\n\n", exeName, optionStr);
 	fprintf(stderr, "    Run with --help for usage info.\n");
-	return ZDW::BAD_PARAMETER;
+	return BAD_PARAMETER;
 }
 
 int emptyFilename(char* exeName)
 {
 	fprintf(stderr, "%s: Empty filename not allowed\n\n", exeName);
 	fprintf(stderr, "    Run with --help for usage info.\n");
-	return ZDW::BAD_PARAMETER;
+	return BAD_PARAMETER;
 }
 //********************************************
-ZDW::ERR_CODE unconvertFile(
+ERR_CODE unconvertFile(
 	string const& filename,
 	const string& outputFileExtension,
 	const string& namesOfColumnsToOutput,
@@ -118,12 +119,12 @@ ZDW::ERR_CODE unconvertFile(
 	bool bTestOnly,
 	bool bOutputDescFileOnly,
 	bool bToStdout,
-	ZDW::COLUMN_INCLUSION_RULE columnInclusionRule,
+	COLUMN_INCLUSION_RULE columnInclusionRule,
 	bool bShowBasicStatisticsOnly)
 {
 	assert(exeName);
 
-	ZDW::ERR_CODE eRet = ZDW::OK;
+	ERR_CODE eRet = OK;
 	if (namesOfColumnsToOutput.empty() || bShowBasicStatisticsOnly) {
 		UnconvertFromZDWToFile<BufferedOutput> unconvertFromZDW(filename, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly);
 		if (bShowBasicStatisticsOnly)
@@ -133,20 +134,20 @@ ZDW::ERR_CODE unconvertFile(
 		UnconvertFromZDWToFile<BufferedOrderedOutput> unconvertFromZDW(filename, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly);
 		const bool bRes = unconvertFromZDW.setNamesOfColumnsToOutput(namesOfColumnsToOutput, columnInclusionRule);
 		if (!bRes)
-			eRet = ZDW::BAD_REQUESTED_COLUMN;
+			eRet = BAD_REQUESTED_COLUMN;
 		else
 			eRet = unconvertFromZDW.unconvert(exeName, outputBasename, outputFileExtension.c_str(), specifiedDir, bToStdout);
 	}
 
 	//Abnormal termination?
-	if (eRet != ZDW::OK) {
+	if (eRet != OK) {
 		//None of the requested columns were outputted.
 		//If we're only looking at the file schema, return with no error.
 		//Otherwise, the error code will inform that no data values are coming back.
-		if (eRet == ZDW::NO_COLUMNS_TO_OUTPUT && bOutputDescFileOnly)
-			return ZDW::OK;
+		if (eRet == NO_COLUMNS_TO_OUTPUT && bOutputDescFileOnly)
+			return OK;
 
-		fprintf(stderr, "Error code=%d (%s): ", eRet, UnconvertFromZDW_Base::ERR_CODE_TEXTS[eRet < ZDW::ERR_CODE_COUNT ? eRet : ZDW::ERR_CODE_COUNT]);
+		fprintf(stderr, "Error code=%d (%s): ", eRet, UnconvertFromZDW_Base::ERR_CODE_TEXTS[eRet < ERR_CODE_COUNT ? eRet : ERR_CODE_COUNT]);
 		fprintf(stderr, "%s: %s failed\n\n", exeName, !filename.empty() ? filename.c_str() : "from stdin");
 	}
 
@@ -164,7 +165,7 @@ int main(int argc, char* argv[])
 	bool bOutputDescFileOnly = false;
 	bool bTestOnly = false;
 	bool bQuiet = false;
-	ZDW::COLUMN_INCLUSION_RULE inclusionRule = ZDW::FAIL_ON_INVALID_COLUMN;
+	COLUMN_INCLUSION_RULE inclusionRule = FAIL_ON_INVALID_COLUMN;
 	bool bShowBasicStatisticsOnly = false;
 	string defaultExtension = ".sql";
 	string namesOfColumnsToOutput;
@@ -230,10 +231,10 @@ int main(int argc, char* argv[])
 					break;
 				case 'c':
 					switch (argv[i][2]) {
-						case 'e': inclusionRule = ZDW::PROVIDE_EMPTY_MISSING_COLUMNS; break;
-						case 'i': inclusionRule = ZDW::SKIP_INVALID_COLUMN; break;
-						case 'x': inclusionRule = ZDW::EXCLUDE_SPECIFIED_COLUMNS; break;
-						case '\0': default: inclusionRule = ZDW::FAIL_ON_INVALID_COLUMN; break;
+						case 'e': inclusionRule = PROVIDE_EMPTY_MISSING_COLUMNS; break;
+						case 'i': inclusionRule = SKIP_INVALID_COLUMN; break;
+						case 'x': inclusionRule = EXCLUDE_SPECIFIED_COLUMNS; break;
+						case '\0': default: inclusionRule = FAIL_ON_INVALID_COLUMN; break;
 					}
 					namesOfColumnsToOutput = argv[++i];
 					break;
@@ -274,11 +275,11 @@ int main(int argc, char* argv[])
 						else if (!strcmp(flag, "help"))
 						{
 							ShowHelp(argv[0]);
-							return ZDW::OK;
+							return OK;
 						}
 						else if (!strcmp(flag, "ver") || !strcmp(flag, "version")) {
 							showVersion();
-							return ZDW::OK;
+							return OK;
 						}
 					}
 					//any other "--text" param is invalid
@@ -319,7 +320,7 @@ int main(int argc, char* argv[])
 					outputFileExtension += ext;
 
 				//Process a file.
-				ZDW::ERR_CODE eRet = unconvertFile(
+				ERR_CODE eRet = unconvertFile(
 					argv[i], outputFileExtension, namesOfColumnsToOutput, specifiedDir.c_str(),
 					NULL, //output basename is the same as of the input filename
 					argv[0],
@@ -327,7 +328,7 @@ int main(int argc, char* argv[])
 					inclusionRule,
 					bShowBasicStatisticsOnly
 				);
-				if (eRet != ZDW::OK)
+				if (eRet != OK)
 					return eRet;
 			}
 		}
@@ -341,7 +342,7 @@ int main(int argc, char* argv[])
 		if (ext)
 			outputFileExtension = ext;
 
-		ZDW::ERR_CODE eRet = unconvertFile(
+		ERR_CODE eRet = unconvertFile(
 			"", //indicates to read data from stdin
 			outputFileExtension, namesOfColumnsToOutput, specifiedDir.c_str(),
 			outputBasename, //an output filename might be set
@@ -350,9 +351,10 @@ int main(int argc, char* argv[])
 			inclusionRule,
 			bShowBasicStatisticsOnly
 		);
-		if (eRet != ZDW::OK)
+		if (eRet != OK)
 			return eRet;
 	}
 
-	return ZDW::OK;
+	return OK;
 }
+

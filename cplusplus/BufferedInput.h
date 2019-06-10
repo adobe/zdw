@@ -20,6 +20,10 @@
 #include <string.h>
 #include <zlib.h>
 
+
+namespace adobe {
+namespace zdw {
+
 class BufferedInput
 {
 public:
@@ -335,5 +339,8 @@ private:
 	bool bFromStdin; //if set, read from stdin instead of 'fp'
 	bool is_gz_file;
 };
+
+} // namespace zdw
+} // namespace adobe
 
 #endif

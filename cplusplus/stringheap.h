@@ -17,6 +17,9 @@
 #include <cstring>
 
 
+namespace adobe {
+namespace zdw {
+
 class StringHeap
 {
 public:
@@ -47,5 +50,8 @@ private:
 
 	bool low_on_memory;
 };
+
+} // namespace zdw
+} // namespace adobe
 
 #endif

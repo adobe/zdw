@@ -20,6 +20,10 @@
 #include <string.h>
 #include <string>
 
+
+namespace adobe {
+namespace zdw {
+
 class BufferedOrderedOutput
 {
 private:
@@ -436,5 +440,8 @@ private:
 	bool bUseInternalBuffer;
 	bool bNeedReorder;
 };
+
+} // namespace zdw
+} // namespace adobe
 
 #endif

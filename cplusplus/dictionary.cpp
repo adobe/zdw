@@ -14,6 +14,12 @@
 #include "memory.h"
 #include <cassert>
 
+using namespace adobe::zdw::internal;
+
+
+namespace adobe {
+namespace zdw {
+
 void Dictionary::clear()
 {
 	stringOffsets.clear();
@@ -103,4 +109,7 @@ void Dictionary::write(FILE* f)
 
 	assert(index == bufferSize);
 }
+
+} // namespace zdw
+} // namespace adobe
 

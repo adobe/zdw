@@ -14,7 +14,8 @@
 #define ZDW_STATUS_OUTPUT_H
 
 
-namespace ZDW {
+namespace adobe {
+namespace zdw {
 
 enum StatusOutputLevel
 {
@@ -31,6 +32,7 @@ void defaultStatusOutputCallback(const StatusOutputLevel level, const char *form
 // Always output to stderr
 void stdErrStatusOutputCallback(const StatusOutputLevel level, const char *format, ...);
 
-}
+} // namespace zdw
+} // namespace adobe
 
 #endif

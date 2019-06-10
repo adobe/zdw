@@ -22,9 +22,8 @@
 #include <set>
 #include "zdw_column_type_constants.h"
 
+using namespace adobe::zdw::internal;
 using std::ostream;
-
-using namespace ZDW;
 using std::map;
 using std::set;
 using std::string;
@@ -56,15 +55,85 @@ using std::vector;
 //version 9e -- expose "virtual_export_row" column.
 //version 10 -- support mediumtext and longtext column types
 
+
+namespace {
+
 static const char newline[] = "\n";
 static const char tab[] = "\t";
+
+const int IGNORE = -1;
+const int USE_VIRTUAL_COLUMN = -2;
+
+char const* const VIRTUAL_EXPORT_BASENAME_COLUMN_NAME = "virtual_export_basename";
+char const* const VIRTUAL_EXPORT_ROW_COLUMN_NAME = "virtual_export_row";
+
+struct InsensitiveCompare
+{
+	bool operator() (const string& lhs, const string& rhs) const
+	{
+		return strcasecmp(lhs.c_str(), rhs.c_str()) < 0;
+	}
+};
+
+
+string getInputFilename(string filename)
+{
+	return !filename.empty() ? filename : string("stdin");
+}
+
+/*
+ * In: inFileName
+ * Out: sourceDir & basename (a pointer into the allocated sourceDir buffer)
+ * The caller needs to free the memory pointed to by sourceDir, after all references to basename.
+ */
+void InitDirAndBasenameFromFileName(string const& inFileNameStr, char * &sourceDir, const char* &basename)
+{
+	char *filestub_local = NULL;
+
+	//Get basename w/o extension.
+	const char* inFileName = inFileNameStr.c_str();
+	if (strchr(inFileName, '/')) {
+		sourceDir = strdup(inFileName);
+		char* tmp = strrchr(sourceDir, '/');
+		*tmp = 0;
+		tmp++;
+		filestub_local = tmp;
+	} else {
+		const string buf = "./" + inFileNameStr;
+		sourceDir = strdup(buf.c_str());
+		sourceDir[1] = 0;
+		filestub_local = sourceDir + 2;
+	}
+
+	//Modify input filestub: cut off the final ".zdw*" for naming the output file(s).
+	char *pos = strstr(filestub_local, ".zdw");
+	while (pos) {
+		//Look for another ".zdw"
+		char *nextPos = strstr(pos + 4, ".zdw");
+		if (nextPos)
+			pos = nextPos;
+		else {
+			//This is the last one.  Truncate it.
+			*pos = 0;
+			break;
+		}
+	}
+
+	basename = filestub_local;
+}
+
+}
+
+
+namespace adobe {
+namespace zdw {
 
 const int UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION = 10;
 const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "";
 
 const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16*1024; //16K default
 
-const char UnconvertFromZDW_Base::ERR_CODE_TEXTS[ZDW::ERR_CODE_COUNT + 1][30] = {
+const char UnconvertFromZDW_Base::ERR_CODE_TEXTS[ERR_CODE_COUNT + 1][30] = {
 	"OK",
 	"BAD_PARAMETER",
 	"GZREAD_FAILED",
@@ -84,69 +153,7 @@ const char UnconvertFromZDW_Base::ERR_CODE_TEXTS[ZDW::ERR_CODE_COUNT + 1][30] = 
 	"UNSUPPORTED_OPERATION",
 	"Unknown error"
 };
-
-const int IGNORE = -1;
-const int USE_VIRTUAL_COLUMN = -2;
-
-char const * const VIRTUAL_EXPORT_BASENAME_COLUMN_NAME = "virtual_export_basename";
-char const * const VIRTUAL_EXPORT_ROW_COLUMN_NAME = "virtual_export_row";
-
-namespace {
-	string getInputFilename(string filename)
-	{
-		return !filename.empty() ? filename : string("stdin");
-	}
-
- /*
-  * In: inFileName
-  * Out: sourceDir & basename (a pointer into the allocated sourceDir buffer)
-  * The caller needs to free the memory pointed to by sourceDir, after all references to basename.
-  */
-	void InitDirAndBasenameFromFileName(string const& inFileNameStr, char * &sourceDir, const char* &basename)
-	{
-		char *filestub_local = NULL;
-
-		//Get basename w/o extension.
-		const char* inFileName = inFileNameStr.c_str();
-		if (strchr(inFileName, '/')) {
-			sourceDir = strdup(inFileName);
-			char* tmp = strrchr(sourceDir, '/');
-			*tmp = 0;
-			tmp++;
-			filestub_local = tmp;
-		} else {
-			const string buf = "./" + inFileNameStr;
-			sourceDir = strdup(buf.c_str());
-			sourceDir[1] = 0;
-			filestub_local = sourceDir + 2;
-		}
-
-		//Modify input filestub: cut off the final ".zdw*" for naming the output file(s).
-		char *pos = strstr(filestub_local, ".zdw");
-		while (pos) {
-			//Look for another ".zdw"
-			char *nextPos = strstr(pos + 4, ".zdw");
-			if (nextPos)
-				pos = nextPos;
-			else {
-				//This is the last one.  Truncate it.
-				*pos = 0;
-				break;
-			}
-		}
-
-		basename = filestub_local;
-	}
-}
-
 //*****************************
-struct InsensitiveCompare
-{
-	bool operator() (const string& lhs, const string& rhs) const
-	{
-		return strcasecmp(lhs.c_str(), rhs.c_str()) < 0;
-	}
-};
 
 //*****************************
 //API maintenance -- old breakdown currently uses this text to detect whether zdw unconvert failed or not
@@ -428,7 +435,7 @@ bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
 
 bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
 	const vector<string> &csv_vector,
-	ZDW::COLUMN_INCLUSION_RULE inclusionRule)
+	COLUMN_INCLUSION_RULE inclusionRule)
 {
 	this->namesOfColumnsToOutput.clear(); //start empty
 	this->bFailOnInvalidColumns = this->bExcludeSpecifiedColumns = this->bOutputEmptyMissingColumns = false;
@@ -469,7 +476,7 @@ bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
 }
 
 //****************************************************
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDescToFile(
+ERR_CODE UnconvertFromZDW_Base::outputDescToFile(
 	const vector<string>& columnNames,
 	const char* outputDir, const char* filestub, //where to output the .desc.sql
 	const char* ext) //extension to give the outputted .desc file (NULL=none)
@@ -488,7 +495,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDescToFile(
 	return val;
 }
 
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDescToStdOut(
+ERR_CODE UnconvertFromZDW_Base::outputDescToStdOut(
 	const vector<string>& columnNames)
 {
 	FILE *out = stdout;
@@ -502,7 +509,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDescToStdOut(
 }
 
 //****************************************************
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDesc(
+ERR_CODE UnconvertFromZDW_Base::outputDesc(
 	const vector<string>& columnNames,
 	FILE *out)
 {
@@ -519,7 +526,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::outputDesc(
 	return OK;
 }
 
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::GetSchema(
+ERR_CODE UnconvertFromZDW_Base::GetSchema(
 	ostream& stream)
 {
 	vector<string> outColumnTexts = getDesc(this->columnNames, " ", "");
@@ -658,7 +665,7 @@ void UnconvertFromZDW_Base::cleanupBlock()
 }
 
 //****************************************************
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::parseBlockHeader()
+ERR_CODE UnconvertFromZDW_Base::parseBlockHeader()
 {
 	assert(this->dictionary.empty());
 	assert(this->dictionary_memblock_size.empty());
@@ -901,7 +908,7 @@ void UnconvertFromZDW_Base::readColumnFieldStats()
 //
 // Read header data for ZDW file.
 //
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW_Base::readHeader()
+ERR_CODE UnconvertFromZDW_Base::readHeader()
 {
 	delete[] this->columnType;
 	this->columnType = NULL;
@@ -1120,7 +1127,7 @@ void UnconvertFromZDW<T>::outputDefault(T& buffer, const UCHAR type)
 
 //****************************************************
 template <typename T>
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
+ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 {
 	long u = 0;
 	char *pos;
@@ -1308,7 +1315,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 //    It also outputs progress and can test a ZDW file for apparent correctness.
 //
 template <typename T>
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
+ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 {
 	ERR_CODE eRet = parseBlockHeader();
 	if (eRet != OK)
@@ -1477,7 +1484,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 //    Also provides a progress indicator and test-only functionality.
 //
 template<typename BufferedOutput_T>
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
+ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
 	const char* binaryName, //name of executable
 	const char* outputBasename, //name of output file (NULL = same as input file's basename)
 	const char* ext, //extension to give to output file names (NULL = none)
@@ -1673,13 +1680,13 @@ template class UnconvertFromZDWToFile<BufferedOrderedOutput>;
 // Used by API to get all the rows out of a ZDW file.
 // The block-based structure of the ZDW file is hidden from the caller.
 //
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(const char** outColumns)
+ERR_CODE UnconvertFromZDWToMemory::getRow(const char** outColumns)
 {
 	size_t num;
 	return getRow(NULL, NULL, outColumns, num);
 }
 
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(char** buffer, size_t *size, const char** outColumns, size_t &numColumns)
+ERR_CODE UnconvertFromZDWToMemory::getRow(char** buffer, size_t *size, const char** outColumns, size_t &numColumns)
 {
 	for (;;) {
 		switch (this->eState)
@@ -1744,7 +1751,7 @@ UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getRow(char** buffer, 
 	}
 }
 
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::getNumOutputColumns(size_t& num)
+ERR_CODE UnconvertFromZDWToMemory::getNumOutputColumns(size_t& num)
 {
 	for (;;) {
 		switch (this->eState)
@@ -1784,7 +1791,7 @@ size_t UnconvertFromZDWToMemory::getCurrentRowLength()
 	return this->pBufferedOutput->getCurrentRowLength();
 }
 
-UnconvertFromZDW_Base::ERR_CODE UnconvertFromZDWToMemory::handleZDWParseBlockHeader()
+ERR_CODE UnconvertFromZDWToMemory::handleZDWParseBlockHeader()
 {
 	//Begin parsing this block.  Read the header first.
 	ERR_CODE eRet = parseBlockHeader();
@@ -1875,3 +1882,7 @@ bool UnconvertFromZDWToMemory::OutputDescToFile(const string &outputDir)
 		free(sourceDir);
 	return eRet == OK;
 }
+
+} // namespace zdw
+} // namespace adobe
+
