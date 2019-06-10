@@ -14,7 +14,7 @@
 // Main wrapper around the UnconvertFromZDWToFile class.
 //
 
-#include "UnconvertFromZDW.h"
+#include "zdw/UnconvertFromZDW.h"
 
 #include <stdio.h>
 #include <stdlib.h>

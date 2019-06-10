@@ -14,7 +14,7 @@
 // Example usage of the UnconvertFromZDWToMemory class.
 //
 
-#include "UnconvertFromZDW.h"
+#include "zdw/UnconvertFromZDW.h"
 
 #include <stdio.h>
 #include <stdlib.h>

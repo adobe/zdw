@@ -13,7 +13,8 @@
 #if not defined( __STDC_LIMIT_MACROS )
 #error __STDC_LIMIT_MACROS must be defined
 #endif
-#include "UnconvertFromZDW.h"
+
+#include "zdw/UnconvertFromZDW.h"
 
 #include <stdint.h>
 #include <math.h>
