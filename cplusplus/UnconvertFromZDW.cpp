@@ -55,6 +55,7 @@ using std::vector;
 //version 9d -- expose "virtual_export_basename" column.
 //version 9e -- expose "virtual_export_row" column.
 //version 10 -- support mediumtext and longtext column types
+//version 10a -- support header line output with non-empty column names for each file block
 
 
 namespace {
@@ -130,7 +131,7 @@ namespace adobe {
 namespace zdw {
 
 const int UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION = 10;
-const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "";
+const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "a";
 
 const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16*1024; //16K default
 
@@ -185,6 +186,7 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 	, bOutputDescFileOnly(bOutputDescFileOnly)
 	, bShowStatus(bShowStatus && !bQuiet), bQuiet(bQuiet)
 	, bTestOnly(bTestOnly)
+	, bOutputNonEmptyColumnHeader(false)
 	, bShowBasicStatisticsOnly(false)
 	, bFailOnInvalidColumns(true)
 	, bExcludeSpecifiedColumns(false)
@@ -905,6 +907,30 @@ void UnconvertFromZDW_Base::readColumnFieldStats()
 	}
 }
 
+string UnconvertFromZDW_Base::getBlockHeaderString() const
+{
+	string header = "***ZDW BLOCK HEADER*** NON-EMPTY COLUMNS: ";
+
+	bool bFirst = true;
+	for (size_t c = 0; c < this->numColumns; ++c)
+	{
+		if (this->outputColumns[c] != IGNORE) {
+			if (this->columnSize[c]) {
+				if (bFirst) {
+					bFirst = false;
+				} else {
+					header += ",";
+				}
+
+				header += this->columnNames[c];
+			}
+		}
+	}
+	header += newline;
+
+	return header;
+}
+
 //***************************************************************
 //
 // Read header data for ZDW file.
@@ -1312,7 +1338,7 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 
 //******************************************************
 //
-// A large function to parse a "block" of a ZDW file.
+// Parse a "block" of a ZDW file.
 //    It also outputs progress and can test a ZDW file for apparent correctness.
 //
 template <typename T>
@@ -1322,7 +1348,8 @@ ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 	if (eRet != OK)
 		return eRet;
 
-	//5. Start parsing rows.
+	printBlockHeader(buffer);
+
 	if (!this->bQuiet)
 		this->statusOutput(INFO, "Reading %u rows\n", this->numLines);
 
@@ -1479,8 +1506,22 @@ ERR_CODE UnconvertFromZDW<T>::parseNextBlock(T& buffer)
 }
 
 //*********************************************************************************
+template <typename T>
+bool UnconvertFromZDW<T>::printBlockHeader(T& buffer)
+{
+	if (!this->bOutputNonEmptyColumnHeader)
+		return false;
+
+	const string header = this->getBlockHeaderString();
+
+	buffer.writeRawLine(header.c_str(), header.size());
+
+	return true;
+}
+
+//*********************************************************************************
 //
-// A large function that performs the entire decompression of a ZDW file
+// Performs the entire decompression of a ZDW file
 //    (and .desc file, if requested) to an output file/stream.
 //    Also provides a progress indicator and test-only functionality.
 //
@@ -1708,6 +1749,20 @@ ERR_CODE UnconvertFromZDWToMemory::getRow(char** buffer, size_t *size, const cha
 					return eRet;
 			}
 			break;
+			case ZDW_OUTPUT_BLOCK_HEADER:
+			{
+				assert(!this->rowsRead);
+
+				if(!bUseInternalBuffer) {
+					this->pBufferedOutput->setOutputBuffer(buffer, size);
+				}
+
+				const bool bOutputRow = printBlockHeader(*this->pBufferedOutput);
+				setState(ZDW_GET_NEXT_ROW);
+				if (bOutputRow)
+					return OK;
+			}
+			break;
 			case ZDW_GET_NEXT_ROW:
 				//Unpacks one row in the current block.
 				if (this->rowsRead < this->numLines)
@@ -1800,7 +1855,12 @@ ERR_CODE UnconvertFromZDWToMemory::handleZDWParseBlockHeader()
 		return eRet;
 
 	assert(!this->pBufferedOutput.get());
-	this->pBufferedOutput.reset(new BufferedOutputInMem(this->exportFileLineLength + this->virtualLineLength + 1, bUseInternalBuffer));
+	size_t headerLineLength = 0;
+	if (this->bOutputNonEmptyColumnHeader) {
+		const string header = getBlockHeaderString();
+		headerLineLength = header.size() + 1;
+	}
+	this->pBufferedOutput.reset(new BufferedOutputInMem(std::max(static_cast<size_t>(this->exportFileLineLength + this->virtualLineLength + 1), headerLineLength), bUseInternalBuffer));
 	if (this->namesOfColumnsToOutput.empty())
 	{
 		//So getNumOutputColumns works in this use case
@@ -1820,7 +1880,7 @@ ERR_CODE UnconvertFromZDWToMemory::handleZDWParseBlockHeader()
 			return BAD_REQUESTED_COLUMN; //column ordering is bad -- don't attempt to process further.
 	}
 
-	setState(ZDW_GET_NEXT_ROW);
+	setState(ZDW_OUTPUT_BLOCK_HEADER);
 	return OK;
 }
 

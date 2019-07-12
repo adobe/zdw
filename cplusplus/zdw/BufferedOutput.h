@@ -144,6 +144,13 @@ public:
 		return (fwrite(str.c_str(), str.size(), 1, this->fp) == 1);
 	}
 
+	bool writeRawLine(const void* data, const size_t size) {
+		if (!this->fp)
+			return true; //nothing to do
+
+		return fwrite(data, size, 1, this->fp) == 1;
+	}
+
 	//Call to reorder column outputs in each row/line of text.
 	//Input: a vector with an unordered sequence of zero-based indices; values of -1 are ignored
 	//
@@ -243,6 +250,8 @@ public:
 
 	//Completes the current row/line of text.
 	bool writeEndline(const void* data, const size_t size) { return write(data, size); }
+
+	bool writeRawLine(const void* data, const size_t size) { return write(data, size); }
 
 	bool setOutputColumnOrder(const int*, const int) { return true; } //not needed here -- use BufferedOrderedOutput if this functionality is desired
 	void setOutputColumnPtrs(const char**) { } //not needed in this class template version
@@ -381,6 +390,18 @@ public:
 		}
 
 		this->index = this->columnNum = 0; //get ready to read next line
+		return true;
+	}
+
+	bool writeRawLine(const void* data, const size_t size) {
+		assert(ppBuffer || bUseInternalBuffer);
+		assert(pBuffer);
+
+		memcpy(this->pBuffer, data, size);
+		this->pBuffer[size] = 0;
+		this->currentRowLength = size;
+
+		assert(bUseInternalBuffer || size < *pBufferSize);
 		return true;
 	}
 

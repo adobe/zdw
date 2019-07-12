@@ -63,6 +63,7 @@ void usage(char* executable)
 	       "\t-t test integrity of zdw file only\n"
 	       "\t-v verbose -- show count of rows during conversion\n"
 	       "\t-w give outputted files no extension (default = .sql)\n"
+		   "\t--non-empty-column-header   output a header line listing non-empty columns in the next file block\n"
 	       "\t--help     show this help\n"
 	       "\t--version  show the version number\n"
 	       "\n");
@@ -120,7 +121,8 @@ ERR_CODE unconvertFile(
 	bool bOutputDescFileOnly,
 	bool bToStdout,
 	COLUMN_INCLUSION_RULE columnInclusionRule,
-	bool bShowBasicStatisticsOnly)
+	bool bShowBasicStatisticsOnly,
+	bool bNonEmptyColumnHeader)
 {
 	assert(exeName);
 
@@ -129,14 +131,17 @@ ERR_CODE unconvertFile(
 		UnconvertFromZDWToFile<BufferedOutput> unconvertFromZDW(filename, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly);
 		if (bShowBasicStatisticsOnly)
 			unconvertFromZDW.showBasicStatisticsOnly();
+		unconvertFromZDW.outputNonEmptyColumnHeader(bNonEmptyColumnHeader);
 		eRet = unconvertFromZDW.unconvert(exeName, outputBasename, outputFileExtension.c_str(), specifiedDir, bToStdout);
 	} else {
 		UnconvertFromZDWToFile<BufferedOrderedOutput> unconvertFromZDW(filename, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly);
 		const bool bRes = unconvertFromZDW.setNamesOfColumnsToOutput(namesOfColumnsToOutput, columnInclusionRule);
-		if (!bRes)
+		if (!bRes) {
 			eRet = BAD_REQUESTED_COLUMN;
-		else
+		} else {
+			unconvertFromZDW.outputNonEmptyColumnHeader(bNonEmptyColumnHeader);
 			eRet = unconvertFromZDW.unconvert(exeName, outputBasename, outputFileExtension.c_str(), specifiedDir, bToStdout);
+		}
 	}
 
 	//Abnormal termination?
@@ -167,6 +172,7 @@ int main(int argc, char* argv[])
 	bool bQuiet = false;
 	COLUMN_INCLUSION_RULE inclusionRule = FAIL_ON_INVALID_COLUMN;
 	bool bShowBasicStatisticsOnly = false;
+	bool bOutputBlockHeaderNonEmptyColumns = false;
 	string defaultExtension = ".sql";
 	string namesOfColumnsToOutput;
 
@@ -281,6 +287,10 @@ int main(int argc, char* argv[])
 							showVersion();
 							return OK;
 						}
+						else if (!strcmp(flag, "non-empty-column-header")) {
+							bOutputBlockHeaderNonEmptyColumns = true;
+							break;
+						}
 					}
 					//any other "--text" param is invalid
 					return badParam(argv[0], argv[i]);
@@ -326,7 +336,8 @@ int main(int argc, char* argv[])
 					argv[0],
 					showStatus, bQuiet, bTestOnly, bOutputDescFileOnly, bStdout,
 					inclusionRule,
-					bShowBasicStatisticsOnly
+					bShowBasicStatisticsOnly,
+					bOutputBlockHeaderNonEmptyColumns
 				);
 				if (eRet != OK)
 					return eRet;
@@ -349,7 +360,8 @@ int main(int argc, char* argv[])
 			argv[0],
 			showStatus, bQuiet, bTestOnly, bOutputDescFileOnly, bStdout,
 			inclusionRule,
-			bShowBasicStatisticsOnly
+			bShowBasicStatisticsOnly,
+			bOutputBlockHeaderNonEmptyColumns
 		);
 		if (eRet != OK)
 			return eRet;
