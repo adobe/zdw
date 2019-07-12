@@ -16,6 +16,7 @@
 #include "dictionary.h"
 #include "zdw/status_output.h"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -28,7 +29,7 @@ class ConvertToZDW
 {
 public:
 	//Version info
-	static const int CONVERT_ZDW_CURRENT_VERSION;
+	static int CONVERT_ZDW_CURRENT_VERSION; //TODO temp non-const for version11 migration
 	static const char CONVERT_ZDW_VERSION_TAIL[3];
 
 	enum Compressor {
@@ -61,6 +62,8 @@ public:
 		NO_INPUT_FILES=18,
 		CANT_OPEN_TEMP_FILE=19,
 		UNKNOWN_ERROR=20,
+		BAD_METADATA_PARAM=21,
+		BAD_METADATA_FILE=22,
 		ERR_CODE_COUNT
 	};
 	static const char ERR_CODE_TEXTS[ERR_CODE_COUNT][30];
@@ -84,13 +87,19 @@ public:
 		delete[] columnSize;
 	}
 
+	//TODO Temporary feature flag for migration to version 11 -- remove after migration
+	void enableVersion11() { m_Version = CONVERT_ZDW_CURRENT_VERSION = 11; }
+
 	void setStatusOutputCallback(StatusOutputCallback cb) { statusOutput = cb; }
 
 	void trimTrailingSpaces(bool val = true) { bTrimTrailingSpaces = val; }
 	const char* getInputFileExtension() const { return "sql"; }
 
+	static int loadMetadataFile(const char* filepath, std::map<std::string, std::string>& metadata);
+
 	ERR_CODE convertFile(const char* infile, const char* exeName,
-		const bool bValidate, char* filestub, const char* outputDir = NULL, const char* zArgs = NULL);
+		const bool bValidate, char* filestub, const char* outputDir = NULL, const char* zArgs = NULL,
+		const std::map<std::string, std::string>& metadata = std::map<std::string, std::string>() );
 
 	Compressor compressor;
 
@@ -136,11 +145,14 @@ private:
 
 	INPUT_STATUS parseInput(FILE* in);
 	ERR_CODE processFile(FILE* in, const char* filestub, const size_t numColumns,
-			const bool bValidate, const char* exeName, const char* outputDir = NULL, const char* zArgs = NULL);
+			const bool bValidate, const char* exeName,
+			const char* outputDir = NULL, const char* zArgs = NULL,
+			const std::map<std::string, std::string>& metadata = std::map<std::string, std::string>() );
 	int unsigned ReadDescFile(FILE* f);
 
 	ERR_CODE validate(const char* zdwFile, const std::vector<std::string>& src_filenames,
 		const char* exeName, const char* outputDir = NULL);
+	bool validateMetadata(const std::map<std::string, std::string>& metadata) const;
 
 	ULONG numRows;
 
@@ -166,7 +178,7 @@ private:
 	StatusOutputCallback statusOutput;
 
 	const bool bQuiet; //quiet running (no progress output messages)
-	bool bTrimTrailingSpaces;
+	bool bTrimTrailingSpaces; //TODO refactor outside of process
 
 	const bool bStreamingInput; //if set, reading data from stdin
 	FILE *tmp_fp; //used when streaming data in -- stores data for second pass

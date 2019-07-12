@@ -19,12 +19,12 @@
 #include "zdw/status_output.h"
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <sys/stat.h>
 
 #include <boost/scoped_ptr.hpp>
-
 
 namespace adobe {
 namespace zdw {
@@ -49,6 +49,7 @@ enum ERR_CODE
 	NO_COLUMNS_TO_OUTPUT=14,
 	PROCESSING_ERROR=15,
 	UNSUPPORTED_OPERATION=16,
+	METADATA_KEY_NOT_PRESENT=17,
 
 	ERR_CODE_COUNT
 };
@@ -83,8 +84,14 @@ struct VisitorPart
 	internal::indexBytes m_PrevID;
 };
 
-} // namespace internal
+struct MetadataOptions {
+	bool bOutputOnlyMetadata;
+	bool bOnlyMetadataKeys;
+	bool bAllowMissingKeys;
+	std::set<std::string> keys;
+};
 
+} // namespace internal
 
 //Contains most of the algorithmic functionality.
 class UnconvertFromZDW_Base
@@ -123,10 +130,17 @@ public:
 
 	ERR_CODE GetSchema(std::ostream& stream);
 
+	void setMetadataOptions(const internal::MetadataOptions& options) {
+		this->metadataOptions = options;
+	}
+
 protected:
 	ERR_CODE outputDescToFile(const std::vector<std::string>& columnNames,
-		const char* outputDir, const char* filestub, const char* ext);
+		const std::string& outputDir, const char* filestub, const char* ext);
 	ERR_CODE outputDescToStdOut(const std::vector<std::string>& columnNames);
+
+	ERR_CODE outputMetadataToFile(const std::string& outputDir, const char* filestub) const;
+	ERR_CODE outputMetadataToStdOut() const;
 
 	size_t readBytes(void* buf, const size_t len, const bool bHaltOnReadError = true);
 	size_t skipBytes(const size_t len);
@@ -148,6 +162,7 @@ protected:
 
 	ULONG exportFileLineLength;
 	ULONG virtualLineLength;
+	std::map<std::string, std::string> metadata; //version 11+
 	std::vector<char *> dictionary; //version 9+
 	std::vector<ULONG> dictionary_memblock_size;
 	internal::UniquesPart *uniques;  //version 1-8
@@ -173,6 +188,7 @@ protected:
 	BufferedInput *input;
 
 	const bool bOutputDescFileOnly; //if set, only output the .desc file, but don't unconvert any data rows
+
 	const bool bShowStatus, bQuiet;
 	const bool bTestOnly;          //if set, only validate that data appear to be good without unconverting
 	bool bOutputNonEmptyColumnHeader; //if set, output a header line listing non-empty columns at the start of each file block
@@ -183,6 +199,7 @@ protected:
 	bool bOutputEmptyMissingColumns; //if set, output an empty column
 
 	//Header info.
+	internal::MetadataOptions metadataOptions;
 	int indexForVirtualBaseNameColumn;
 	int indexForVirtualRowColumn;
 	std::vector<std::string> columnNames;
@@ -229,6 +246,8 @@ private:
 		const std::string& name_type_separator, const std::string& delimiter) const;
 	std::string getColumnDesc(const std::string& name, UCHAR type, size_t index,
 		const std::string& name_type_separator, const std::string& delimiter) const;
+
+	ERR_CODE outputMetadata(FILE* out) const;
 
 	size_t currentRowNumber;
 };

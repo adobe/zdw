@@ -18,12 +18,15 @@
 
 #include <cstring>
 #include <cassert>
+#include <fstream>
+#include <sstream>
 #include <math.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
 
 using namespace adobe::zdw::internal;
+using std::map;
 using std::strchr;
 using std::string;
 using std::vector;
@@ -35,7 +38,7 @@ using std::vector;
 //version 5b -- workaround to allow lines bigger than 32K
 //version 5c -- now preserves carriage returns from the source file instead of stripping them when they precede the line feed
 //version 5d -- more accurate RAM available check
-//version 5e -- added support for source data with no visIDs (e.g. wbenchecom) and no unique values (e.g. empty file); now supports input files with a .wb extension
+//version 5e -- added support for source data with no visIDs and no unique values (e.g. empty file); now supports input files with other extensions
 //version 6  -- added explicit support for signed (negative) numbers (ZDW files created before ver6 are all considered unsigned), support for lines longer than 64K bytes (up to 4G bytes)
 //version 7  -- added support for tinytext and char(3+) fields; also now store the exact size of fields
 //version 7a -- rebalance the visitor ID node tree much less frequently to avoid performance slowdowns on files with monotonically increasing visids
@@ -49,7 +52,8 @@ using std::vector;
 //version 9a -- added support for passing in arguments to the file compression process
 //version 9b -- Allowing > 2040 columns to be set in a block (via fixing an integer overflow)
 //version 10 -- add support for mediumtext and longtext columns
-
+//version 10a -- version 11 support built in (use of v11 is disabled by default)
+//version 11 -- add metadata block to file header
 
 namespace {
 
@@ -65,8 +69,8 @@ inline bool dump_trimmed_row_to_temp_file(FILE* fp, const vector<char*>& rowColu
 namespace adobe {
 namespace zdw {
 
-const int ConvertToZDW::CONVERT_ZDW_CURRENT_VERSION = 10;
-const char ConvertToZDW::CONVERT_ZDW_VERSION_TAIL[3] = "";
+int ConvertToZDW::CONVERT_ZDW_CURRENT_VERSION = 10; //TODO temp non-const for version 11 migration
+const char ConvertToZDW::CONVERT_ZDW_VERSION_TAIL[3] = "a";
 
 const char ConvertToZDW::ERR_CODE_TEXTS[ERR_CODE_COUNT][30] = {
 	"OK","NO_ARGS","CONVERSION_FAILED","UNTAR_FAILED","MISSING_DESC_FILE","MISSING_SQL_FILE",
@@ -74,7 +78,8 @@ const char ConvertToZDW::ERR_CODE_TEXTS[ERR_CODE_COUNT][30] = {
 	"FILES_DIFFER","MISSING_ARGUMENT","GZIP_FAILED","BZIP2_FAILED",
 	"DESC_FILE_MISSING_TYPE_INFO","WRONG_NUM_OF_COLUMNS_ON_A_ROW",
 	"BAD_PARAMETER","TOO_MANY_INPUT_FILES","NO_INPUT_FILES","CANT_OPEN_TEMP_FILE",
-	"Unknown error"
+	"Unknown error",
+	"BAD_METADATA_PARAMETER", "BAD_METADATA_FILE"
 };
 
 //Parses the .desc.sql file to determine column names and sql types
@@ -197,13 +202,13 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 		//Compare the two data pipes.
 		sprintf(cmd, "/bin/bash -c \"cmp <(%s) <(%s)\"", zdw_cmd.c_str(), zcat_str.c_str());
 	} else if (this->bTrimTrailingSpaces) {
-		//Stream ZDW file to 'cmp' (binary comparison) against a trimmed version of the original .sql/.wb file
+		//Stream ZDW file to 'cmp' (binary comparison) against a trimmed version of the original .sql file
 		assert(src_filenames.size() == 1);
 		string cat_str = zdw_path + "trim_spaces ";
 		cat_str += src_filenames[0];
 		sprintf(cmd, "/bin/bash -c \"cmp <(%s) <(%s)\"", zdw_cmd.c_str(), cat_str.c_str());
 	} else {
-		//Stream ZDW file to 'cmp' (binary comparison) against the original .sql/.wb file
+		//Stream ZDW file to 'cmp' (binary comparison) against the original .sql file
 		assert(src_filenames.size() == 1);
 		sprintf(cmd, "%s | cmp %s", zdw_cmd.c_str(), src_filenames[0].c_str());
 	}
@@ -212,6 +217,45 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 		statusOutput(INFO, "VALIDATION COMMAND: %s\n", cmd);
 	const int err = system(cmd);
 	return err == 0 ? OK : FILES_DIFFER;
+}
+
+//Returns: whether inputted metadata is valid
+bool ConvertToZDW::validateMetadata(const map<string, string>& metadata) const
+{
+	for (map<string, string>::const_iterator it=metadata.begin(); it!=metadata.end(); ++it) {
+		const string &key = it->first, &value = it->second;
+		if (key.find_first_of("=\n") != string::npos)
+			return false;
+		if (value.find_first_of("\n") != string::npos)
+			return false;
+	}
+
+	return true;
+}
+
+//Returns: 0=success, -1=file load error, otherwise # of bad line
+int ConvertToZDW::loadMetadataFile(const char* filepath,
+	map<string, string>& metadata) //(in/out)
+{
+	std::ifstream stream(filepath);
+
+	if (!stream)
+		return -1;
+
+	string line;
+	for (int linenum=1; getline(stream, line); ++linenum)
+	{
+		if (line.empty())
+			continue;
+
+		const size_t position = line.find('=');
+		if (position == string::npos)
+			return linenum;
+
+		metadata[line.substr(0, position)] = line.substr(position+1);
+	}
+
+	return 0;
 }
 
 //Returns: number of columns in returned row
@@ -566,35 +610,46 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	const bool bValidate,  //(in) whether to validate outputted file
 	const char* exeName,   //(in) name of this binary
 	const char* outputDir, //(in) directory to output to [default=NULL, i.e. current]
-	const char* zArgs)     //(in) if not NULL (default), pass this into compression process
+	const char* zArgs,     //(in) if not NULL (default), pass this into compression process
+	const map<string, string>& metadata) //(in) supply these key-value pairs as file metadata
 {
 	assert(filestub);
 	assert(exeName);
 
-	char zdwFile[2048], outputPath[256] = {0};
-
-	//Output to a different dir?
-	char basefilestub[1024];
-	strcpy(basefilestub, filestub); //same by default
-	if (outputDir)
+	//Validate metadata block.
+	if (!validateMetadata(metadata))
 	{
-		//Trim the path of the input file
-		char *basePtr = basefilestub + strlen(basefilestub);
-		while (basePtr > basefilestub && basePtr[-1] != '/')
-			--basePtr;
+		statusOutput(ERROR, "Invalid metadata parameter\n");
+		return BAD_METADATA_PARAM;
+	}
+	if (!metadata.empty() && CONVERT_ZDW_CURRENT_VERSION < 11)
+	{
+		//TODO remove post v11 migration
+		statusOutput(ERROR, "Metadata values are not supported before version 11\n");
+		return BAD_METADATA_PARAM;
+	}
 
-		//output to this dir
-		sprintf(outputPath, "%s/", outputDir);
-		sprintf(zdwFile, "%s%s", outputPath, basePtr);
+	string zdwFile;
+
+	if (!outputDir) {
+		zdwFile += filestub; //same name + path
 	} else {
-		strcpy(zdwFile, filestub); //same name + path
+		//Output to a different dir
+		zdwFile += outputDir;
+		zdwFile += "/";
+
+		//Skip any directory separators in the input filepath
+		const char *base = filestub + strlen(filestub);
+		while (base > filestub && base[-1] != '/')
+			--base;
+		zdwFile += base;
 	}
 
 	const string outfile_basepath = zdwFile;
 
 	//The ZDW file will be named "<outputDir><basefilename>.zdw.[xz|gz|bz2|etc]"
-	strcat(zdwFile, ".zdw");
-	strcat(zdwFile, getExtensionForCompressor());
+	zdwFile += ".zdw";
+	zdwFile += getExtensionForCompressor();
 
 	//Stream out the data being created to a temp file name.
 	//We'll rename it to the final filename (zdwFile) on completion.
@@ -620,6 +675,27 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 
 	//Write version #.
 	fwrite(&m_Version, 1, 2, out);
+
+	//Write metadata block.
+	if (CONVERT_ZDW_CURRENT_VERSION == 11) //TODO temp feature flag hack for migration from version 10 to version 11
+	{
+		ULONG metadata_length = 0;
+		map<string, string>::const_iterator it;
+		for (it=metadata.begin(); it!=metadata.end(); ++it) {
+			metadata_length += it->first.length();
+			metadata_length += it->second.length();
+			metadata_length += 2; //two null terminators
+		}
+		fwrite(&metadata_length, 1, 4, out);
+
+		for (it=metadata.begin(); it!=metadata.end(); ++it) {
+			const string &key = it->first, &value = it->second;
+			fwrite(key.c_str(), 1, key.length(), out);
+			fputc('\0', out);
+			fwrite(value.c_str(), 1, value.length(), out);
+			fputc('\0', out);
+		}
+	}
 
 	//Write column info.
 	{
@@ -694,7 +770,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	{
 		INPUT_STATUS inputStatus;
 		fpos_t fbegin;
-		char *tmp_filename = NULL;
+		string tmp_filename;
 
 		++blocks;
 
@@ -715,8 +791,9 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 			//Open a temp file in the output dir in order to store
 			//the data being streamed in for the second read pass.
 			assert(!this->tmp_fp);
-			tmp_filename = static_cast<char*>(malloc(strlen(zdwFile) + 20));
-			sprintf(tmp_filename, "%s.tmp.%d.gz", outfile_basepath.c_str(), file_pieces);
+			std::ostringstream str;
+			str << outfile_basepath << ".tmp." << file_pieces << ".gz";
+			tmp_filename = str.str();
 			string cmd = "gzip > "; //compress the data to reduce disk writes
 			cmd += tmp_filename;
 			this->tmp_fp = popen(cmd.c_str(), "w");
@@ -808,13 +885,12 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		if (this->bStreamingInput) {
 			//Done reading the temp file -- either save it for validatation or delete it.
 			assert(p_second_in);
-			assert(tmp_filename);
 			pclose(p_second_in);
-			if (bValidate)
-				tmp_filenames.push_back(string(tmp_filename));
-			else
-				unlink(tmp_filename); //we're not validating -- free up disk space now
-			free(tmp_filename);
+			if (bValidate) {
+				tmp_filenames.push_back(tmp_filename);
+			} else {
+				unlink(tmp_filename.c_str()); //we're not validating -- free up disk space now
+			}
 
 			++file_pieces;
 		}
@@ -834,9 +910,9 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		if (eValid == OK)
 		{
 			if (!this->bQuiet)
-				statusOutput(INFO, "%s GOOD\n", zdwFile);
+				statusOutput(INFO, "%s GOOD\n", zdwFile.c_str());
 		} else {
-			statusOutput(INFO, "%s BAD\n", zdwFile);
+			statusOutput(INFO, "%s BAD\n", zdwFile.c_str());
 			res = eValid;
 		}
 	}
@@ -885,7 +961,8 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	const bool bValidate, //(in) if true, then validate that the converted file is good
 	char* filestub,       //(out)
 	const char* outputDir,//(in) if not NULL (default), use this as the output directory
-	const char* zArgs)    //(in) if not NULL (default), pass these arguments into file compressor
+	const char* zArgs,    //(in) if not NULL (default), pass these arguments into file compressor
+	const map<string, string>& metadata) //(in) supply these key-value pairs as file metadata
 {
 	char command[2048];
 	FILE* in;
@@ -918,6 +995,16 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 		return DESC_FILE_MISSING_TYPE_INFO;
 	fclose(in);
 
+	map<string, string> inMetadata = metadata;
+	if (inMetadata.empty() && CONVERT_ZDW_CURRENT_VERSION >= 11) {
+		//Default to .metadata file contents, if present.
+		sprintf(command, "%s.metadata", filestub);
+		const int res = loadMetadataFile(command, inMetadata);
+		if (res > 0) //ignore -1: it's okay for file to be not present
+			return BAD_METADATA_FILE;
+	}
+
+
 	//Set needed size for vars.
 	this->rowColumns.reserve(numColumns);
 	delete[] minmaxset;
@@ -943,7 +1030,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 
 	ERR_CODE conversionResult = UNKNOWN_ERROR;
 	try {
-		conversionResult = processFile(in, filestub, numColumns, bValidate, exeName, outputDir, zArgs);
+		conversionResult = processFile(in, filestub, numColumns, bValidate, exeName, outputDir, zArgs, inMetadata);
 	}
 	catch(const std::bad_alloc&) {
 		return OUT_OF_MEMORY;

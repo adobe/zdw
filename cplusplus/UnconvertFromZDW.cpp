@@ -26,6 +26,7 @@
 using namespace adobe::zdw::internal;
 using std::ostream;
 using std::map;
+using std::pair;
 using std::set;
 using std::string;
 using std::vector;
@@ -56,6 +57,7 @@ using std::vector;
 //version 9e -- expose "virtual_export_row" column.
 //version 10 -- support mediumtext and longtext column types
 //version 10a -- support header line output with non-empty column names for each file block
+//version 11 -- add metadata block to header
 
 
 namespace {
@@ -130,8 +132,8 @@ void InitDirAndBasenameFromFileName(string const& inFileNameStr, char * &sourceD
 namespace adobe {
 namespace zdw {
 
-const int UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION = 10;
-const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "a";
+const int UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION = 11;
+const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "";
 
 const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16*1024; //16K default
 
@@ -153,6 +155,7 @@ const char UnconvertFromZDW_Base::ERR_CODE_TEXTS[ERR_CODE_COUNT + 1][30] = {
 	"NO_COLUMNS_TO_OUTPUT",
 	"PROCESSING_ERROR",
 	"UNSUPPORTED_OPERATION",
+	"METADATA_KEY_NOT_PRESENT",
 	"Unknown error"
 };
 //*****************************
@@ -481,15 +484,17 @@ bool UnconvertFromZDW_Base::setNamesOfColumnsToOutput(
 //****************************************************
 ERR_CODE UnconvertFromZDW_Base::outputDescToFile(
 	const vector<string>& columnNames,
-	const char* outputDir, const char* filestub, //where to output the .desc.sql
+	const string& outputDir, const char* filestub, //where to output the .desc.sql
 	const char* ext) //extension to give the outputted .desc file (NULL=none)
 {
 	//Open .desc.sql file handle for output.
-	char outFileName[1024];
-	sprintf(outFileName, "%s/%s.desc%s", outputDir, filestub, ext ? ext : "");
-	FILE *out = fopen(outFileName, "w");
+	string outFileName = outputDir + "/" + filestub + ".desc";
+	if (ext)
+		outFileName += ext;
+
+	FILE *out = fopen(outFileName.c_str(), "w");
 	if (!out) {
-		statusOutput(ERROR, "%s: Could not open %s for writing\n", exeName.c_str(), outFileName);
+		statusOutput(ERROR, "%s: Could not open %s for writing\n", exeName.c_str(), outFileName.c_str());
 		return FILE_CREATION_ERR;
 	}
 
@@ -501,14 +506,7 @@ ERR_CODE UnconvertFromZDW_Base::outputDescToFile(
 ERR_CODE UnconvertFromZDW_Base::outputDescToStdOut(
 	const vector<string>& columnNames)
 {
-	FILE *out = stdout;
-	if (!out)
-	{
-		statusOutput(ERROR, "%s: Could not open STDOUT for writing\n", exeName.c_str());
-		return FILE_CREATION_ERR;
-	}
-
-	return outputDesc(columnNames, out);
+	return outputDesc(columnNames, stdout);
 }
 
 //****************************************************
@@ -642,6 +640,71 @@ string UnconvertFromZDW_Base::getColumnDesc(const string& name, UCHAR type, size
 
 	text += delimiter;
 	return text;
+}
+
+ERR_CODE UnconvertFromZDW_Base::outputMetadataToFile(
+	const string& outputDir, const char* filestub) const
+{
+	const string outFileName = outputDir + "/" + filestub + ".metadata";
+
+	FILE *out = fopen(outFileName.c_str(), "w");
+	if (!out) {
+		statusOutput(ERROR, "%s: Could not open %s for writing\n", exeName.c_str(), outFileName.c_str());
+		return FILE_CREATION_ERR;
+	}
+
+	const ERR_CODE val = outputMetadata(out);
+	fclose(out);
+	return val;
+}
+
+ERR_CODE UnconvertFromZDW_Base::outputMetadataToStdOut() const
+{
+	return outputMetadata(stdout);
+}
+
+//****************************************************
+ERR_CODE UnconvertFromZDW_Base::outputMetadata(FILE *out)
+const
+{
+	const set<string>& keys = this->metadataOptions.keys;
+
+	//Filter output set
+	set<string> outKeys;
+	set<string>::const_iterator it;
+	for (it=keys.begin(); it!=keys.end(); ++it)
+	{
+		if (!this->metadataOptions.bAllowMissingKeys &&
+			this->metadata.find(*it) == this->metadata.end())
+		{
+			return METADATA_KEY_NOT_PRESENT;
+		}
+
+		outKeys.insert(*it);
+	}
+
+	//Output metadata keys
+	map<string,string>::const_iterator m_it;
+	if (outKeys.empty()) {
+		for (m_it = this->metadata.begin(); m_it != this->metadata.end(); ++m_it) {
+			if (this->metadataOptions.bOnlyMetadataKeys) {
+				fprintf(out, "%s\n", m_it->first.c_str());
+			} else {
+				fprintf(out, "%s=%s\n", m_it->first.c_str(), m_it->second.c_str());
+			}
+		}
+	} else {
+		for (it = outKeys.begin(); it != outKeys.end(); ++it) {
+			if (this->metadataOptions.bOnlyMetadataKeys) {
+				fprintf(out, "%s\n", it->c_str());
+			} else {
+				m_it = this->metadata.find(*it);
+				fprintf(out, "%s=%s\n", it->c_str(), (m_it != this->metadata.end()) ? m_it->second.c_str() : "");
+			}
+		}
+	}
+
+	return OK;
 }
 
 //****************************************
@@ -952,12 +1015,36 @@ ERR_CODE UnconvertFromZDW_Base::readHeader()
 	if (this->version > UNCONVERT_ZDW_VERSION)
 		return UNSUPPORTED_ZDW_VERSION_ERR;
 
-	if (this->version == 1)
-		this->decimalFactor = DECIMAL_FACTOR_VERSION_1;
+	if (this->bShowBasicStatisticsOnly)
+		this->statusOutput(INFO, "File version %d\n", static_cast<int>(this->version));
 
-	//2. Parse file attributes here (before version 3).
-	if (this->version <= 2)
+	this->metadata.clear();
+	if (this->version >= 11)
 	{
+		//2. Metadata block
+		ULONG metadata_size;
+		readBytes(&metadata_size, 4);
+
+		if (this->bShowBasicStatisticsOnly)
+			this->statusOutput(INFO, "Metadata block size = %u\n", metadata_size);
+
+		char *metadata_block = static_cast<char*>(malloc(metadata_size));
+		readBytes(metadata_block, metadata_size);
+		const char *key = metadata_block, *value;
+		while (key - metadata_block < static_cast<long>(metadata_size)) {
+			value = key + strlen(key) + 1; //skip past null terminator
+			this->metadata[string(key)] = string(value);
+
+			//advance to next key-value pair
+			key = value + strlen(value) + 1; //skip past null terminator
+		}
+		free(metadata_block);
+	} else if (this->version <= 2)
+	{
+		//2a. Parse file attributes (before version 3).
+		if (this->version == 1)
+			this->decimalFactor = DECIMAL_FACTOR_VERSION_1;
+
 		readBytes(&this->numLines, 4);
 		readBytes(&this->exportFileLineLength, 2);
 		if (this->exportFileLineLength > DEFAULT_LINE_LENGTH)
@@ -966,8 +1053,6 @@ ERR_CODE UnconvertFromZDW_Base::readHeader()
 			this->row = new char[this->exportFileLineLength];
 		}
 	}
-	if (this->bShowBasicStatisticsOnly)
-		this->statusOutput(INFO, "File version %d\n", static_cast<int>(this->version));
 
 	//3. Parse column names.
 	this->columnNames.clear();
@@ -1522,7 +1607,7 @@ bool UnconvertFromZDW<T>::printBlockHeader(T& buffer)
 //*********************************************************************************
 //
 // Performs the entire decompression of a ZDW file
-//    (and .desc file, if requested) to an output file/stream.
+//    (and .desc and .metadata files, if requested) to an output file/stream.
 //    Also provides a progress indicator and test-only functionality.
 //
 template<typename BufferedOutput_T>
@@ -1531,11 +1616,12 @@ ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
 	const char* outputBasename, //name of output file (NULL = same as input file's basename)
 	const char* ext, //extension to give to output file names (NULL = none)
 	const char* specifiedDir, //use if non NULL and non-empty
-	bool bStdout) //if true, direct unconverted text to stdout and don't output
-	                    //a .desc file
+	bool bStdout)             //if true, direct unconverted text to stdout and don't output
+	                          //.desc or .metadata files
 {
 	ERR_CODE eRet = OK;
 	ERR_CODE eDescErr;
+	ERR_CODE eMetadataErr;
 	char *sourceDir = NULL;
 	const char *filestub = NULL;
 
@@ -1569,7 +1655,7 @@ ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
 		filestub = "stdin";
 	}
 
-	char *outputDir = strdup((specifiedDir && (strlen(specifiedDir) > 0)) ? specifiedDir : sourceDir);
+	const string outputDir = (specifiedDir && (strlen(specifiedDir) > 0)) ? specifiedDir : sourceDir;
 
 	//If no output filename is specified, use the input filename as the default.
 	if (!outputBasename)
@@ -1577,14 +1663,17 @@ ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
 
 	if (this->bShowStatus) {
 		const char *status;
-		if (this->bShowBasicStatisticsOnly)
+		if (this->bShowBasicStatisticsOnly) {
 			status = "Showing statistics";
-		else if (this->bTestOnly)
+		} else if (this->bTestOnly) {
 			status = "Testing";
-		else if (this->bOutputDescFileOnly)
+		} else if (this->bOutputDescFileOnly) {
 			status = "Outputting .desc file only";
-		else
+		} else if (this->metadataOptions.bOutputOnlyMetadata) {
+			status = "Outputting .metadata file only";
+		} else {
 			status = "Processing";
+		}
 		this->statusOutput(INFO, "\n%s %s\n", filestub, status);
 	}
 
@@ -1598,40 +1687,62 @@ ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
 	}
 
 	//2. Begin extracting to SQL export file/stdout.
-	if (!this->bTestOnly && !this->bShowBasicStatisticsOnly && !this->bOutputDescFileOnly) //...except in these cases
+	if (!this->bTestOnly && !this->bShowBasicStatisticsOnly && !this->bOutputDescFileOnly && !this->metadataOptions.bOutputOnlyMetadata) //...except in these cases
 	{
-		char textbuf[1024];
-		sprintf(textbuf, "%s/%s%s", outputDir, outputBasename, ext ? ext : "");
-		if (this->bShowStatus)
-			this->statusOutput(INFO, "Writing %s\n", textbuf);
+		string outFileName = outputDir + "/" + outputBasename;
+		if (ext)
+			outFileName += ext;
+
+		if(this->bShowStatus)
+			this->statusOutput(INFO, "Writing %s\n", outFileName.c_str());
 		//Open output stream.
 		if (bStdout) {
 			this->out = stdout;
 		} else {
-			this->out = fopen(textbuf, "w");
+			this->out = fopen(outFileName.c_str(), "w");
 		}
 		if (!this->out)
 		{
-			this->statusOutput(ERROR, "%s: Could not open %s for writing\n", this->exeName.c_str(), textbuf);
+			this->statusOutput(ERROR, "%s: Could not open %s for writing\n", this->exeName.c_str(), outFileName.c_str());
 			eRet = FILE_CREATION_ERR;
 			goto Done;
 		}
 	}
 
-	if (!this->bTestOnly && !this->bShowBasicStatisticsOnly && (!bStdout || this->bOutputDescFileOnly))
-	{
-		//Output a .desc.sql file to disk/stdout.
-		//This is not done when testing the integrity of a .zdw file or streaming
-		//the text of the main file to stdout.
-		eDescErr = bStdout ? this->outputDescToStdOut(this->columnNames) : this->outputDescToFile(this->columnNames, outputDir, outputBasename, ext);
-		if (eDescErr != OK)
+	if (!this->bTestOnly && !this->bShowBasicStatisticsOnly) {
+		if ((!bStdout || this->bOutputDescFileOnly) && !this->metadataOptions.bOutputOnlyMetadata)
 		{
-			this->statusOutput(ERROR, "%s: Could not extract the %s.desc%s file\n", this->exeName.c_str(), outputBasename, ext ? ext : "");
-			eRet = eDescErr;
-			goto Done;
+			//Output a .desc.sql file to disk/stdout.
+			//This is not done when testing the integrity of a .zdw file,
+			//streaming the text of the main file to stdout,
+			//or outputting the metadata segment.
+			eDescErr = bStdout ? this->outputDescToStdOut(this->columnNames) : this->outputDescToFile(this->columnNames, outputDir, outputBasename, ext);
+			if (eDescErr != OK)
+			{
+				this->statusOutput(ERROR, "%s: Could not extract the %s.desc%s file\n", this->exeName.c_str(), outputBasename, ext ? ext : "");
+				eRet = eDescErr;
+				goto Done;
+			}
+			if (this->bOutputDescFileOnly)
+				goto Done; //don't parse the rest of the file
 		}
-		if (this->bOutputDescFileOnly)
-			goto Done; //don't parse the rest of the file
+
+		if (!bStdout || this->metadataOptions.bOutputOnlyMetadata)
+		{
+			//Output a .metadata file to disk/stdout,
+			//excepting in the above cases mentioned for .desc files.
+			if (!this->metadata.empty() || !this->metadataOptions.keys.empty() || this->metadataOptions.bOutputOnlyMetadata) {
+				eMetadataErr = bStdout ? this->outputMetadataToStdOut() : this->outputMetadataToFile(outputDir, outputBasename);
+				if (eMetadataErr != OK)
+				{
+					this->statusOutput(ERROR, "%s: Could not extract the %s.metadata file\n", this->exeName.c_str(), outputBasename);
+					eRet = eMetadataErr;
+					goto Done;
+				}
+			}
+			if (this->metadataOptions.bOutputOnlyMetadata)
+				goto Done;
+		}
 	}
 
 	{
@@ -1684,8 +1795,6 @@ Done:
 	//Clean-up.
 	if (sourceDir)
 		free(sourceDir);
-	if (outputDir)
-		free(outputDir);
 	if (this->out && !bStdout)
 		fclose(this->out);
 
