@@ -2047,10 +2047,49 @@ bool UnconvertFromZDWToMemory::OutputDescToFile(const string &outputDir)
 	char *sourceDir = NULL;
 	const char* outputBasename = NULL;
 	InitDirAndBasenameFromFileName(this->inFileName, sourceDir, outputBasename);
-	ERR_CODE eRet = this->outputDescToFile(this->columnNames, outputDir.c_str(), outputBasename, ".sql");
+	ERR_CODE eRet = this->outputDescToFile(this->columnNames, outputDir, outputBasename, ".sql");
 	if (sourceDir)
 		free(sourceDir);
 	return eRet == OK;
+}
+
+vector<std::pair<uint64_t,string> > UnconvertFromZDWToMemory::getFileLineage()
+{
+	const string LINEAGE_KEY = "lineage";
+
+	vector<std::pair<uint64_t,string> > out;
+
+	if (this->eState == ZDW_BEGIN) {
+		ERR_CODE eRet = readHeader();
+		if (eRet != OK) {
+			out.push_back(std::make_pair<uint64_t,string>(0, string("bad ZDW header")));
+			return out;
+		}
+	}
+
+	std::map<string, string>::const_iterator it = this->metadata.find(LINEAGE_KEY);
+
+	if (it == this->metadata.end())
+		return out;
+
+	const string &value = it->second;
+	if (value.empty())
+		return out;
+
+	size_t pos = 0, rowpos;
+	do {
+		rowpos = value.find(',', pos);
+		if (rowpos == string::npos) {
+			out.push_back(std::make_pair<uint64_t,string>(0, string("bad lineage data")));
+			return out;
+		}
+
+		out.push_back(std::make_pair<uint64_t,string>(strtoull(value.c_str() + rowpos + 1, NULL, 10), value.substr(pos, rowpos - pos)));
+
+		pos = value.find('|', rowpos + 2); //skip comma and digit
+	} while (pos != string::npos);
+
+	return out;
 }
 
 } // namespace zdw

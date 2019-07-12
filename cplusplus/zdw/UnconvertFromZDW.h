@@ -327,6 +327,8 @@ public:
 	//output desc.sql file to {outputDir} directory
 	bool OutputDescToFile(const std::string &outputDir);
 
+	std::vector<std::pair<uint64_t, std::string> > getFileLineage();
+
 protected:
 	ERR_CODE handleZDWParseBlockHeader();
 
