@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
 							break;
 						}
 						if (!strncmp(flag, "metadata:", 9)) {
-							const char *key = flag+9;
+							const char *key = flag + 9;
 							const char *value = strchr(key, '=');
 							if (!value)
 								return badParam(program, argv[i]);
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
 							const char *filepath = flag + 14;
 							const int line_res = ConvertToZDW::loadMetadataFile(filepath, metadata);
 							if (line_res) {
-								fprintf(stderr, "%s: Metadata file load error '%s' (line %d) \n\n", program, filepath, line_res);
+								fprintf(stderr, "%s: Metadata file load error '%s' (line %d)\n\n", program, filepath, line_res);
 								return ConvertToZDW::BAD_PARAMETER;
 							}
 							break;

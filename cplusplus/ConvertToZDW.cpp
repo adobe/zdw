@@ -55,6 +55,7 @@ using std::vector;
 //version 10a -- version 11 support built in (use of v11 is disabled by default)
 //version 11 -- add metadata block to file header
 
+
 namespace {
 
 static const int unsigned BAD_FIELD = static_cast<int unsigned>(-1);
@@ -222,7 +223,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 //Returns: whether inputted metadata is valid
 bool ConvertToZDW::validateMetadata(const map<string, string>& metadata) const
 {
-	for (map<string, string>::const_iterator it=metadata.begin(); it!=metadata.end(); ++it) {
+	for (map<string, string>::const_iterator it = metadata.begin(); it != metadata.end(); ++it) {
 		const string &key = it->first, &value = it->second;
 		if (key.find_first_of("=\n") != string::npos)
 			return false;
@@ -243,7 +244,7 @@ int ConvertToZDW::loadMetadataFile(const char* filepath,
 		return -1;
 
 	string line;
-	for (int linenum=1; getline(stream, line); ++linenum)
+	for (int linenum = 1; getline(stream, line); ++linenum)
 	{
 		if (line.empty())
 			continue;
@@ -252,7 +253,7 @@ int ConvertToZDW::loadMetadataFile(const char* filepath,
 		if (position == string::npos)
 			return linenum;
 
-		metadata[line.substr(0, position)] = line.substr(position+1);
+		metadata[line.substr(0, position)] = line.substr(position + 1);
 	}
 
 	return 0;
@@ -681,14 +682,14 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	{
 		ULONG metadata_length = 0;
 		map<string, string>::const_iterator it;
-		for (it=metadata.begin(); it!=metadata.end(); ++it) {
+		for (it = metadata.begin(); it != metadata.end(); ++it) {
 			metadata_length += it->first.length();
 			metadata_length += it->second.length();
 			metadata_length += 2; //two null terminators
 		}
 		fwrite(&metadata_length, 1, 4, out);
 
-		for (it=metadata.begin(); it!=metadata.end(); ++it) {
+		for (it = metadata.begin(); it != metadata.end(); ++it) {
 			const string &key = it->first, &value = it->second;
 			fwrite(key.c_str(), 1, key.length(), out);
 			fputc('\0', out);
@@ -971,7 +972,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	assert(exeName);
 	assert(filestub);
 
-	m_LongestLine = 16*1024; //16K default
+	m_LongestLine = 16 * 1024; //16K default
 	delete[] m_row;
 	m_row = new char[m_LongestLine];
 
@@ -1003,7 +1004,6 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 		if (res > 0) //ignore -1: it's okay for file to be not present
 			return BAD_METADATA_FILE;
 	}
-
 
 	//Set needed size for vars.
 	this->rowColumns.reserve(numColumns);
