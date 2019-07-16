@@ -135,7 +135,7 @@ namespace zdw {
 const int UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION = 11;
 const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "";
 
-const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16*1024; //16K default
+const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16 * 1024; //16K default
 
 const char UnconvertFromZDW_Base::ERR_CODE_TEXTS[ERR_CODE_COUNT + 1][30] = {
 	"OK",
@@ -221,7 +221,7 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 			const size_t len = inFileName.size();
 			if (len >= 4 && !strcmp(inFileName.c_str() + len - 3, ".gz")) {
 				//Internal uncompression of .gz files.
-				input = new BufferedInput(inFileName.c_str(), 16*1024, true);
+				input = new BufferedInput(inFileName.c_str(), 16 * 1024, true);
 				return;
 			}
 			if (len >= 5 && !strcmp(inFileName.c_str() + len - 4, ".bz2")) {
@@ -664,15 +664,14 @@ ERR_CODE UnconvertFromZDW_Base::outputMetadataToStdOut() const
 }
 
 //****************************************************
-ERR_CODE UnconvertFromZDW_Base::outputMetadata(FILE *out)
-const
+ERR_CODE UnconvertFromZDW_Base::outputMetadata(FILE *out) const
 {
 	const set<string>& keys = this->metadataOptions.keys;
 
 	//Filter output set
 	set<string> outKeys;
 	set<string>::const_iterator it;
-	for (it=keys.begin(); it!=keys.end(); ++it)
+	for (it = keys.begin(); it != keys.end(); ++it)
 	{
 		if (!this->metadataOptions.bAllowMissingKeys &&
 			this->metadata.find(*it) == this->metadata.end())
@@ -684,7 +683,7 @@ const
 	}
 
 	//Output metadata keys
-	map<string,string>::const_iterator m_it;
+	map<string, string>::const_iterator m_it;
 	if (outKeys.empty()) {
 		for (m_it = this->metadata.begin(); m_it != this->metadata.end(); ++m_it) {
 			if (this->metadataOptions.bOnlyMetadataKeys) {
@@ -1039,8 +1038,7 @@ ERR_CODE UnconvertFromZDW_Base::readHeader()
 			key = value + strlen(value) + 1; //skip past null terminator
 		}
 		free(metadata_block);
-	} else if (this->version <= 2)
-	{
+	} else if (this->version <= 2) {
 		//2a. Parse file attributes (before version 3).
 		if (this->version == 1)
 			this->decimalFactor = DECIMAL_FACTOR_VERSION_1;
@@ -1693,7 +1691,7 @@ ERR_CODE UnconvertFromZDWToFile<BufferedOutput_T>::unconvert(
 		if (ext)
 			outFileName += ext;
 
-		if(this->bShowStatus)
+		if (this->bShowStatus)
 			this->statusOutput(INFO, "Writing %s\n", outFileName.c_str());
 		//Open output stream.
 		if (bStdout) {
@@ -1862,7 +1860,7 @@ ERR_CODE UnconvertFromZDWToMemory::getRow(char** buffer, size_t *size, const cha
 			{
 				assert(!this->rowsRead);
 
-				if(!bUseInternalBuffer) {
+				if (!bUseInternalBuffer) {
 					this->pBufferedOutput->setOutputBuffer(buffer, size);
 				}
 
@@ -2053,21 +2051,21 @@ bool UnconvertFromZDWToMemory::OutputDescToFile(const string &outputDir)
 	return eRet == OK;
 }
 
-vector<std::pair<uint64_t,string> > UnconvertFromZDWToMemory::getFileLineage()
+vector<pair<uint64_t, string> > UnconvertFromZDWToMemory::getFileLineage()
 {
 	const string LINEAGE_KEY = "lineage";
 
-	vector<std::pair<uint64_t,string> > out;
+	vector<pair<uint64_t, string> > out;
 
 	if (this->eState == ZDW_BEGIN) {
 		ERR_CODE eRet = readHeader();
 		if (eRet != OK) {
-			out.push_back(std::make_pair<uint64_t,string>(0, string("bad ZDW header")));
+			out.push_back(std::make_pair<uint64_t, string>(0, string("bad ZDW header")));
 			return out;
 		}
 	}
 
-	std::map<string, string>::const_iterator it = this->metadata.find(LINEAGE_KEY);
+	map<string, string>::const_iterator it = this->metadata.find(LINEAGE_KEY);
 
 	if (it == this->metadata.end())
 		return out;
@@ -2080,11 +2078,11 @@ vector<std::pair<uint64_t,string> > UnconvertFromZDWToMemory::getFileLineage()
 	do {
 		rowpos = value.find(',', pos);
 		if (rowpos == string::npos) {
-			out.push_back(std::make_pair<uint64_t,string>(0, string("bad lineage data")));
+			out.push_back(std::make_pair<uint64_t, string>(0, string("bad lineage data")));
 			return out;
 		}
 
-		out.push_back(std::make_pair<uint64_t,string>(strtoull(value.c_str() + rowpos + 1, NULL, 10), value.substr(pos, rowpos - pos)));
+		out.push_back(std::make_pair<uint64_t, string>(strtoull(value.c_str() + rowpos + 1, NULL, 10), value.substr(pos, rowpos - pos)));
 
 		pos = value.find('|', rowpos + 2); //skip comma and digit
 	} while (pos != string::npos);

@@ -26,6 +26,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
+
 namespace adobe {
 namespace zdw {
 
@@ -84,7 +85,8 @@ struct VisitorPart
 	internal::indexBytes m_PrevID;
 };
 
-struct MetadataOptions {
+struct MetadataOptions
+{
 	bool bOutputOnlyMetadata;
 	bool bOnlyMetadataKeys;
 	bool bAllowMissingKeys;
@@ -122,7 +124,7 @@ public:
 
 	void printError(const std::string &exeName, const std::string &inFileName);
 
-	void outputNonEmptyColumnHeader(bool bFlag=true) { this->bOutputNonEmptyColumnHeader = bFlag; }
+	void outputNonEmptyColumnHeader(bool bFlag = true) { this->bOutputNonEmptyColumnHeader = bFlag; }
 	ERR_CODE readHeader();
 	bool setNamesOfColumnsToOutput(const std::string& csv_str, COLUMN_INCLUSION_RULE inclusionRule);
 	bool setNamesOfColumnsToOutput(const std::vector<std::string> &csv_vector, COLUMN_INCLUSION_RULE inclusionRule);
@@ -130,7 +132,8 @@ public:
 
 	ERR_CODE GetSchema(std::ostream& stream);
 
-	void setMetadataOptions(const internal::MetadataOptions& options) {
+	void setMetadataOptions(const internal::MetadataOptions& options)
+	{
 		this->metadataOptions = options;
 	}
 

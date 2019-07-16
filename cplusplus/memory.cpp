@@ -19,7 +19,7 @@ using std::string;
 
 namespace {
 
-const float DEFAULT_PROCESS_MEMORY_THRESHOLD = 3.0f*1024; //in MB
+const float DEFAULT_PROCESS_MEMORY_THRESHOLD = 3.0f * 1024; //in MB
 
 }
 
