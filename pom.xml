@@ -212,7 +212,8 @@
             </execution>
           </executions>
           <configuration>
-            <argLine>-Xmx1024m</argLine>
+            <!-- Force timezone to try and catch any local timezone assumptions -->
+            <argLine>-Xmx1024m -Duser.timezone=Europe/Bucharest</argLine>
           </configuration>
         </plugin>
         <plugin>

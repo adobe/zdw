@@ -14,6 +14,7 @@ package com.adobe.analytics.zdw.format
 import java.io.DataInputStream
 import java.nio.charset.{Charset, StandardCharsets}
 import java.text.SimpleDateFormat
+import java.util.TimeZone
 
 import scala.collection.mutable
 
@@ -57,7 +58,12 @@ case class ZDWBlock(
   private[this] val newValueFlagsBytes = new Array[Byte](newValueFlagsNumBytes)
   private[this] val prevColumnValues = new Array[Any](header.columns.size)
 
-  private[this] val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  private[this] val dateTimeFormat = {
+    val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    // Always parse date-time string values as UTC because there isn't a defined timezone
+    format.setTimeZone(TimeZone.getTimeZone("UTC"))
+    format
+  }
 
   override def hasNext: Boolean = rowNum < numRows
 
