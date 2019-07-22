@@ -91,6 +91,11 @@ struct MetadataOptions
 	bool bOnlyMetadataKeys;
 	bool bAllowMissingKeys;
 	std::set<std::string> keys;
+
+	MetadataOptions() :
+		bOutputOnlyMetadata(false),
+		bOnlyMetadataKeys(false),
+		bAllowMissingKeys(false) { }
 };
 
 } // namespace internal

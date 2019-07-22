@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 	string defaultExtension = ".sql";
 	string namesOfColumnsToOutput;
 
-	internal::MetadataOptions metadataOptions = {false, false, false};
+	internal::MetadataOptions metadataOptions;
 
 	if (argc < 2)
 	{
