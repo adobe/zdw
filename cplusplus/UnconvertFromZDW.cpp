@@ -2074,18 +2074,20 @@ vector<pair<uint64_t, string> > UnconvertFromZDWToMemory::getFileLineage()
 	if (value.empty())
 		return out;
 
-	size_t pos = 0, rowpos;
+	size_t basename_pos = 0, row_pos;
 	do {
-		rowpos = value.find(',', pos);
-		if (rowpos == string::npos) {
+		row_pos = value.find(',', basename_pos);
+		if (row_pos == string::npos) {
 			out.push_back(std::make_pair<uint64_t, string>(0, string("bad lineage data")));
 			return out;
 		}
 
-		out.push_back(std::make_pair<uint64_t, string>(strtoull(value.c_str() + rowpos + 1, NULL, 10), value.substr(pos, rowpos - pos)));
+		out.push_back(std::make_pair<uint64_t, string>(strtoull(value.c_str() + row_pos + 1, NULL, 10), value.substr(basename_pos, row_pos - basename_pos)));
 
-		pos = value.find('|', rowpos + 2); //skip comma and digit
-	} while (pos != string::npos);
+		basename_pos = value.find('|', row_pos + 1); //start searching beyond comma
+		if (basename_pos != string::npos)
+			++basename_pos; //skip pipe
+	} while (basename_pos != string::npos);
 
 	return out;
 }
