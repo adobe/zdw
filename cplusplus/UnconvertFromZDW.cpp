@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <ostream>
+#include <sstream>
 #include <algorithm>
 #include <set>
 #include "zdw_column_type_constants.h"
@@ -251,6 +252,13 @@ UnconvertFromZDW_Base::~UnconvertFromZDW_Base()
 	delete[] this->outputColumns;
 	delete[] this->row;
 	delete this->input;
+}
+
+string UnconvertFromZDW_Base::getVersion()
+{
+	std::ostringstream str;
+	str << UNCONVERT_ZDW_VERSION << UNCONVERT_ZDW_VERSION_TAIL;
+	return str.str();
 }
 
 //**********************************************
