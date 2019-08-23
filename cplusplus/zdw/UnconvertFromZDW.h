@@ -104,6 +104,8 @@ public:
 
 	void setStatusOutputCallback(StatusOutputCallback cb) { statusOutput = cb; }
 
+	static std::string getVersion();
+
 	//Common API.
 	std::vector<std::string> getColumnNames() const { return this->columnNames; }
 	UCHAR* getColumnTypes() const { return this->columnType; }
