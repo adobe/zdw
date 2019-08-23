@@ -216,11 +216,9 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 			string cmd;
 			const size_t len = inFileName.size();
 			if (len >= 4 && !strcmp(inFileName.c_str() + len - 3, ".gz")) {
-				//Internal uncompression of .gz files.
-				input = new BufferedInput(inFileName.c_str(), 16*1024, true);
-				return;
-			}
-			if (len >= 5 && !strcmp(inFileName.c_str() + len - 4, ".bz2")) {
+				cmd = "zcat ";
+				cmd += inFileName;
+			} else if (len >= 5 && !strcmp(inFileName.c_str() + len - 4, ".bz2")) {
 				//Streaming uncompression of .bz2 files.
 				cmd = "bzip2 -d --stdout ";
 				cmd += inFileName;
@@ -234,7 +232,7 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 				cmd += inFileName;
 			}
 
-			input = new BufferedInput(cmd.c_str());
+			input = new BufferedInput(cmd);
 		}
 	} else {
 		//No filename specified -- read ZDW data from stdin.
