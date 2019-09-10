@@ -218,6 +218,7 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 			if (len >= 4 && !strcmp(inFileName.c_str() + len - 3, ".gz")) {
 				cmd = "zcat ";
 				cmd += inFileName;
+				cmd.append(" 2>/dev/null"); //we don't need to see any chatter -- we output all relevant error codes ourselves
 			} else if (len >= 5 && !strcmp(inFileName.c_str() + len - 4, ".bz2")) {
 				//Streaming uncompression of .bz2 files.
 				cmd = "bzip2 -d --stdout ";
