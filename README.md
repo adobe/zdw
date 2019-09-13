@@ -13,7 +13,7 @@ ZDW uses a combination of:
 * Minimum value baseline per column for integers and dictionary indexes, to reduce the magnitude of the value needed on each row of that column
 * Bit-flagging repeat column values across consecutive rows (similar approach to run-length encoding, but applied on a per-row basis)
 
-It has evolved through multiple internal iterations (at version 10 as of September 2018).
+It has evolved through multiple internal iterations (at version 10 as of September 2018 and version 11 as of September 2019).
 See [ZDW v10 format](ZDW%20v10%20format.png) for a diagram of the ZDW v10 format.
 
 ## Approach
