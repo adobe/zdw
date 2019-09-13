@@ -108,35 +108,32 @@ public:
 		} while (this->length < this->capacity && !this->bEOF);
 	}
 
-	const char* getline(char* buf, const size_t size)
+	//Stitch together multiple lines of text with embedded newlines
+	const char* getrow(char *row, int rowSize)
 	{
-		assert(buf);
-		assert(size);
+		int len = 0;
 
-		if (this->bFromStdin)
-			return fgets(buf, size, stdin);
+		for (;;)
+		{
+			const char *str = this->getline(row + len, rowSize - len);
+			if (!str)
+				return len ? row : NULL;
 
-		const size_t size_minus_1 = size - 1;
-		size_t out_pos = 0;
-		while (can_read_more_data()) {
-			while (this->index < this->length) {
-				if (out_pos == size_minus_1) {
-					//Filled output buffer
-					buf[out_pos] = 0;
-					return buf;
-				}
-				const char ch = this->buffer[this->index++];
-				buf[out_pos++] = ch;
-				if (ch == '\n') {
-					buf[out_pos] = 0;
-					return buf;
-				}
-			}
+			len += strlen(str);
+			if (len >= rowSize)
+				break; //buffer is full -- can't read in any more data
 
-			refill_buffer();
+			if (row[len - 1] != '\n') //no potentially embedded newline to check for
+				break;
+
+			int e = 2; //walk backwards from the character before observed newline
+			while (e <= len && row[len - e] == '\\')
+				++e;
+			if (!(e % 2)) //odd number (of preceding backslashes) indicates embedded newline -- need to read more of the row
+				break;
 		}
 
-		return out_pos ? buf : NULL;
+		return row;
 	}
 
 	//Returns: number of bytes read
@@ -275,6 +272,37 @@ public:
 	}
 
 private:
+	const char* getline(char* buf, const size_t size)
+	{
+		assert(buf);
+		assert(size);
+
+		if (this->bFromStdin)
+			return fgets(buf, size, stdin);
+
+		const size_t size_minus_1 = size - 1;
+		size_t out_pos = 0;
+		while (can_read_more_data()) {
+			while (this->index < this->length) {
+				if (out_pos == size_minus_1) {
+					//Filled output buffer
+					buf[out_pos] = 0;
+					return buf;
+				}
+				const char ch = this->buffer[this->index++];
+				buf[out_pos++] = ch;
+				if (ch == '\n') {
+					buf[out_pos] = 0;
+					return buf;
+				}
+			}
+
+			refill_buffer();
+		}
+
+		return out_pos ? buf : NULL;
+	}
+
 	std::string command;
 	FILE* fp;
 	char *buffer;

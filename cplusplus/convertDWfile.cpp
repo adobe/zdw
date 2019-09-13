@@ -20,7 +20,9 @@
 #include <unistd.h>
 
 using namespace adobe::zdw;
+using std::map;
 using std::strcmp;
+using std::string;
 
 
 //******************************************************************
@@ -39,7 +41,7 @@ void usage(const char* executable)
 	else
 		exe = executable;
 
-	printf("Usage: %s [-d <dir>] [-(b|J|q|r|v)] [--zargs=X] [--mem-limit=MB] file1 [file2] ...\n", exe);
+	printf("Usage: %s [-d <dir>] [-(b|J|q|r|v)] [other options] file1 [file2] ...\n", exe);
 	printf(
 		"\t-b  compress .zdw with bzip2 [default=use gzip]\n"
 		"\t-J  compress .zdw with xz [default=use gzip]\n"
@@ -49,8 +51,13 @@ void usage(const char* executable)
 		"\t-r  remove the old files\n"
 		"\t-t  trim trailing spaces from fields (for MySQL 5 exports)\n"
 		"\t-v  validate the new file\n"
-		"\t--zargs   arguments to pass in to the file compression process\n"
-		"\t--mem-limit   limit the MB of RAM used (default=3072 MB)\n"
+		"\n"
+		"\t--zargs=X          arguments to pass in to the file compression process\n"
+		"\t--mem-limit=<MB>   limit the MB of RAM used (default=3072 MB)\n"
+		"\n"
+		"\t--metadata:<key>=<value>   supply a key-value pair to store as file metadata for every file being converted\n"
+		"\t--metadata-file=<filename> supply a filepath to specify key-value pairs (formatted as '<key>=<value>' pairs, each on a separate line) to store as file metadata for every file being converted\n"
+		"\n"
 		"\t--help     show this help\n"
 		"\t--version  show the version number\n"
 		"Input files must have a .sql extension.\n"
@@ -85,6 +92,7 @@ int badParam(const char* exeName, const char* paramStr)
 	return ConvertToZDW::BAD_PARAMETER;
 }
 
+//************************************
 int main(int argc, char* argv[])
 {
 	const char* program = argv[0];
@@ -103,6 +111,7 @@ int main(int argc, char* argv[])
 	ConvertToZDW::Compressor compressor = ConvertToZDW::GZIP;
 	const char* pOutputDir = NULL; //default = current dir
 	const char* zArgs = NULL;
+	map<string, string> metadata;
 
 	//Parse flags.
 	int i;
@@ -143,6 +152,23 @@ int main(int argc, char* argv[])
 						if (!strncmp(flag, "mem-limit=", 10)) {
 							if (!Memory::set_memory_threshold_MB(atof(flag + 10)))
 								return badParam(program, argv[i]);
+							break;
+						}
+						if (!strncmp(flag, "metadata:", 9)) {
+							const char *key = flag + 9;
+							const char *value = strchr(key, '=');
+							if (!value)
+								return badParam(program, argv[i]);
+							metadata[string(key, value - key)] = string(value + 1);
+							break;
+						}
+						if (!strncmp(flag, "metadata-file=", 14)) {
+							const char *filepath = flag + 14;
+							const int line_res = ConvertToZDW::loadMetadataFile(filepath, metadata);
+							if (line_res) {
+								fprintf(stderr, "%s: Metadata file load error '%s' (line %d)\n\n", program, filepath, line_res);
+								return ConvertToZDW::BAD_PARAMETER;
+							}
 							break;
 						}
 						if (!strncmp(flag, "zargs=", 6)) {
@@ -191,7 +217,7 @@ int main(int argc, char* argv[])
 			convert.compressor = compressor;
 			if (trimTrailingSpaces)
 				convert.trimTrailingSpaces();
-			const ConvertToZDW::ERR_CODE res = convert.convertFile(argv[i], program, validate, filestub, pOutputDir, zArgs);
+			const ConvertToZDW::ERR_CODE res = convert.convertFile(argv[i], program, validate, filestub, pOutputDir, zArgs, metadata);
 
 			if (res != ConvertToZDW::OK)
 			{

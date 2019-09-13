@@ -40,10 +40,10 @@ void usage(char* executable)
 	else
 		exe = executable;
 
-	printf("Usage: %s [-(i|o|q|s|t|v|w)] [-a string2append] [-c[e|i|x] csvColumnNames] [-d outputDirectory] file1 [file2...]\n", exe);
+	printf("Usage: %s [-(i|o|q|s|t|v|w)] [-c[e|i|x] csvColumnNames] [other options] file1 [file2...]\n", exe);
 	printf("\t-  direct outputted text to stdout, and status text to stderr\n"
 	       "\t     No .desc file is outputted, except when the -o option is also set.\n"
-	       "\t-a specify a string to be appended to the output filename\n"
+	       "\t-a <text to append>  specify text to be appended to the output filename\n"
 	       "\t-c specify a comma-separated list of column names to output (default = all columns)\n"
 	       "\t\t Columns are output in the order they are given.\n"
 	       "\t\t Non-existent and duplicate column names result in an error.\n"
@@ -52,7 +52,7 @@ void usage(char* executable)
 	       "\t-ci same as '-c', but do not error when invalid columns are specified\n"
 	       "\t\t Non-existent and duplicate column names after the first entry are ignored.\n"
 	       "\t-cx Include all columns except for this comma-separated list\n"
-	       "\t-d specify the directory in which to place the resulting files\n"
+	       "\t-d <outputDirectory>  specify the directory in which to place the resulting files\n"
 	       "\t\t (default=the files will be placed in the same directory as the .zdw file)\n"
 	       "\t-i read data to unconvert from stdin and by default send it to stdout.\n"
 	       "\t     No filenames listed on the command line will be processed.\n"
@@ -63,6 +63,17 @@ void usage(char* executable)
 	       "\t-t test integrity of zdw file only\n"
 	       "\t-v verbose -- show count of rows during conversion\n"
 	       "\t-w give outputted files no extension (default = .sql)\n"
+	       "\n"
+	       "\t--metadata       Provide to have only the metadata artifact output\n"
+	       "\t--metadata-keys  Provide to have only the metadata keys output (no values)\n"
+	       "\t--metadata-values=<csv keynames>  If supplied, only the indicated key-value pairs will be output\n"
+	       "\t\t Non-existent and duplicate keys result in an error.\n"
+	       "\t--metadata-values-allow-missing=<csv keynames>  If supplied, only the indicated key-value pairs will be output\n"
+	       "\t\t For keys not present in the file, an empty value will be supplied.\n"
+	       "\t\t This option is not compatible with --metadata-values\n"
+	       "\n"
+	       "\t--non-empty-column-header   output a header line listing non-empty columns in the next file block\n"
+	       "\n"
 	       "\t--help     show this help\n"
 	       "\t--version  show the version number\n"
 	       "\n");
@@ -106,6 +117,7 @@ int emptyFilename(char* exeName)
 	fprintf(stderr, "    Run with --help for usage info.\n");
 	return BAD_PARAMETER;
 }
+
 //********************************************
 ERR_CODE unconvertFile(
 	string const& filename,
@@ -120,28 +132,35 @@ ERR_CODE unconvertFile(
 	bool bOutputDescFileOnly,
 	bool bToStdout,
 	COLUMN_INCLUSION_RULE columnInclusionRule,
-	bool bShowBasicStatisticsOnly)
+	bool bShowBasicStatisticsOnly,
+	bool bNonEmptyColumnHeader,
+	const internal::MetadataOptions& metadataOptions)
 {
 	assert(exeName);
 
 	ERR_CODE eRet = OK;
 	if (namesOfColumnsToOutput.empty() || bShowBasicStatisticsOnly) {
 		UnconvertFromZDWToFile<BufferedOutput> unconvertFromZDW(filename, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly);
+		unconvertFromZDW.setMetadataOptions(metadataOptions);
 		if (bShowBasicStatisticsOnly)
 			unconvertFromZDW.showBasicStatisticsOnly();
+		unconvertFromZDW.outputNonEmptyColumnHeader(bNonEmptyColumnHeader);
 		eRet = unconvertFromZDW.unconvert(exeName, outputBasename, outputFileExtension.c_str(), specifiedDir, bToStdout);
 	} else {
 		UnconvertFromZDWToFile<BufferedOrderedOutput> unconvertFromZDW(filename, bShowStatus, bQuiet, bTestOnly, bOutputDescFileOnly);
+		unconvertFromZDW.setMetadataOptions(metadataOptions);
 		const bool bRes = unconvertFromZDW.setNamesOfColumnsToOutput(namesOfColumnsToOutput, columnInclusionRule);
-		if (!bRes)
+		if (!bRes) {
 			eRet = BAD_REQUESTED_COLUMN;
-		else
+		} else {
+			unconvertFromZDW.outputNonEmptyColumnHeader(bNonEmptyColumnHeader);
 			eRet = unconvertFromZDW.unconvert(exeName, outputBasename, outputFileExtension.c_str(), specifiedDir, bToStdout);
+		}
 	}
 
 	//Abnormal termination?
 	if (eRet != OK) {
-		//None of the requested columns were outputted.
+		//None of the requested columns were output.
 		//If we're only looking at the file schema, return with no error.
 		//Otherwise, the error code will inform that no data values are coming back.
 		if (eRet == NO_COLUMNS_TO_OUTPUT && bOutputDescFileOnly)
@@ -158,8 +177,8 @@ ERR_CODE unconvertFile(
 int main(int argc, char* argv[])
 {
 	string specifiedDir;
-	char *ext = NULL;
-	char *outputBasename = NULL; //the name of the input file, by default
+	const char *ext = NULL;
+	const char *outputBasename = NULL; //the name of the input file, by default
 	bool showStatus = false;
 	bool bStdin = false, bStdout = false;
 	bool bOutputDescFileOnly = false;
@@ -167,8 +186,11 @@ int main(int argc, char* argv[])
 	bool bQuiet = false;
 	COLUMN_INCLUSION_RULE inclusionRule = FAIL_ON_INVALID_COLUMN;
 	bool bShowBasicStatisticsOnly = false;
+	bool bOutputBlockHeaderNonEmptyColumns = false;
 	string defaultExtension = ".sql";
 	string namesOfColumnsToOutput;
+
+	internal::MetadataOptions metadataOptions;
 
 	if (argc < 2)
 	{
@@ -183,10 +205,11 @@ int main(int argc, char* argv[])
 	bool gave_c_option = false;
 	for (i = 1; i < argc; i++)
 	{
-		if (argv[i][0] == '-')
+		const char *arg = argv[i];
+		if (arg[0] == '-')
 		{
 			//Validate single-dash flags
-			switch (argv[i][1]) {
+			switch (arg[1]) {
 				case 'a':
 				case 'i':
 				case 'o':
@@ -195,32 +218,34 @@ int main(int argc, char* argv[])
 				case 't':
 				case 'v':
 				case 'w':
-					if (argv[i][2] != '\0')
-						return badParam(argv[0], argv[i]);
+					if (arg[2] != '\0')
+						return badParam(argv[0], arg);
 					break;
 				case 'c':
 					if (gave_c_option)
-						return extraOption(argv[0], argv[i]);
+						return extraOption(argv[0], arg);
 					gave_c_option = true;
-					if (argv[i][2] != '\0') {
+					if (arg[2] != '\0') {
 						//-c[e|i|x] flag
-						if ((argv[i][2] != 'e' && argv[i][2] != 'i' && argv[i][2] != 'x') || argv[i][3] != '\0')
-							return badParam(argv[0], argv[i]);
+						if ((arg[2] != 'e' && arg[2] != 'i' && arg[2] != 'x') || arg[3] != '\0')
+							return badParam(argv[0], arg);
 					}
 				break;
+
+				//Double-dash arguments validated below
 			}
 			//Options that need an argument.
-			switch (argv[i][1]) {
+			switch (arg[1]) {
 				case 'a':
 				case 'c':
 				case 'd':
 					if (argc <= i + 1)
-						return missingParam(argv[0], argv[i]);
+						return missingParam(argv[0], arg);
 				break;
 			}
 
 			//Execute flag.
-			switch (argv[i][1])
+			switch (arg[1])
 			{
 				case '\0': //i.e. '-'
 					bStdout = true;
@@ -230,7 +255,7 @@ int main(int argc, char* argv[])
 					ext = argv[++i];
 					break;
 				case 'c':
-					switch (argv[i][2]) {
+					switch (arg[2]) {
 						case 'e': inclusionRule = PROVIDE_EMPTY_MISSING_COLUMNS; break;
 						case 'i': inclusionRule = SKIP_INVALID_COLUMN; break;
 						case 'x': inclusionRule = EXCLUDE_SPECIFIED_COLUMNS; break;
@@ -267,37 +292,82 @@ int main(int argc, char* argv[])
 				case 'w': //no default extension
 					defaultExtension.resize(0);
 					break;
-				case '-': //i.e., '--[text]'
+				case '-': //double dash arguments, i.e., '--[text]'
 					{
-						const char* flag = argv[i] + 2;
-						if (strlen(flag) == 0) //"--" for outputting to stdout is deprecated
-							bStdout = true;
-						else if (!strcmp(flag, "help"))
+						const char* flag = arg + 2;
+						if (!strcmp(flag, "help"))
 						{
 							ShowHelp(argv[0]);
 							return OK;
 						}
-						else if (!strcmp(flag, "ver") || !strcmp(flag, "version")) {
+						if (!strcmp(flag, "ver") || !strcmp(flag, "version")) {
 							showVersion();
 							return OK;
 						}
+						if (!strcmp(flag, "non-empty-column-header")) {
+							bOutputBlockHeaderNonEmptyColumns = true;
+							break;
+						}
+						if (!strcmp(flag, "metadata")) {
+							metadataOptions.bOutputOnlyMetadata = true;
+							break;
+						}
+						if (!strcmp(flag, "metadata-keys")) {
+							metadataOptions.bOnlyMetadataKeys = true;
+							break;
+						}
+						if (!strncmp(flag, "metadata-values=", 16) || !strncmp(flag, "metadata-values-allow-missing=", 30)) {
+							if (!metadataOptions.keys.empty())
+								return extraOption(argv[0], arg);
+
+							const bool bAllowMissing = !strncmp(flag, "metadata-values-allow-missing=", 30);
+							metadataOptions.bAllowMissingKeys = bAllowMissing;
+
+							const char *value = flag + (bAllowMissing ? 30 : 16);
+							while (value) {
+								const char *nextVal = strchr(value, ',');
+								if (nextVal) {
+									const string v(value, static_cast<size_t>(nextVal - value));
+									if (!(metadataOptions.keys.insert(v)).second)
+										return badParam(argv[0], arg); //duplicate key
+									++nextVal; //advance beyond comma
+								} else {
+									const string v(value);
+									if (!(metadataOptions.keys.insert(v)).second)
+										return badParam(argv[0], arg); //duplicate key
+								}
+								value = nextVal;
+							}
+
+							if (metadataOptions.keys.empty())
+								return badParam(argv[0], arg);
+							break;
+						}
 					}
+
 					//any other "--text" param is invalid
-					return badParam(argv[0], argv[i]);
+					return badParam(argv[0], arg);
 				default:
-					return badParam(argv[0], argv[i]);
+					return badParam(argv[0], arg);
 			}
 		}
+	}
+
+	//Concurrent argument guards
+	if (bOutputDescFileOnly && metadataOptions.bOutputOnlyMetadata) {
+		fprintf(stderr, "-o and --metadata options are incompatible.  Aborting.\n");
+		return BAD_PARAMETER;
 	}
 
 	//Step 2.
 	//Process files listed on the command line.
 	for (i = 1; i < argc; i++)
 	{
-		if (argv[i][0] == '-')
+		const char *arg = argv[i];
+		if (arg[0] == '-')
 		{
 			//Skip the argument given to these flags.
-			switch (argv[i][1])
+			switch (arg[1])
 			{
 				case 'a':
 				case 'c':
@@ -306,13 +376,13 @@ int main(int argc, char* argv[])
 				break;
 			}
 		} else {
-			if (argv[i][0] == '\0') {
+			if (arg[0] == '\0') {
 				return emptyFilename(argv[0]);
 			}
 			if (bStdin) {
 				//Filename is considered an output base filename when reading from stdin.
 				//That is, no filenames on the command line are processed as input files.
-				outputBasename = argv[i];
+				outputBasename = arg;
 			} else {
 				//Build extension to give to outputted files.
 				string outputFileExtension = defaultExtension;
@@ -321,12 +391,14 @@ int main(int argc, char* argv[])
 
 				//Process a file.
 				ERR_CODE eRet = unconvertFile(
-					argv[i], outputFileExtension, namesOfColumnsToOutput, specifiedDir.c_str(),
+					arg, outputFileExtension, namesOfColumnsToOutput, specifiedDir.c_str(),
 					NULL, //output basename is the same as of the input filename
 					argv[0],
 					showStatus, bQuiet, bTestOnly, bOutputDescFileOnly, bStdout,
 					inclusionRule,
-					bShowBasicStatisticsOnly
+					bShowBasicStatisticsOnly,
+					bOutputBlockHeaderNonEmptyColumns,
+					metadataOptions
 				);
 				if (eRet != OK)
 					return eRet;
@@ -349,7 +421,9 @@ int main(int argc, char* argv[])
 			argv[0],
 			showStatus, bQuiet, bTestOnly, bOutputDescFileOnly, bStdout,
 			inclusionRule,
-			bShowBasicStatisticsOnly
+			bShowBasicStatisticsOnly,
+			bOutputBlockHeaderNonEmptyColumns,
+			metadataOptions
 		);
 		if (eRet != OK)
 			return eRet;

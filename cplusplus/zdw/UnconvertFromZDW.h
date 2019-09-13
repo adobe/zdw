@@ -19,6 +19,7 @@
 #include "status_output.h"
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <sys/stat.h>
@@ -49,6 +50,7 @@ enum ERR_CODE
 	NO_COLUMNS_TO_OUTPUT=14,
 	PROCESSING_ERROR=15,
 	UNSUPPORTED_OPERATION=16,
+	METADATA_KEY_NOT_PRESENT=17,
 
 	ERR_CODE_COUNT
 };
@@ -83,8 +85,20 @@ struct VisitorPart
 	internal::indexBytes m_PrevID;
 };
 
-} // namespace internal
+struct MetadataOptions
+{
+	bool bOutputOnlyMetadata;
+	bool bOnlyMetadataKeys;
+	bool bAllowMissingKeys;
+	std::set<std::string> keys;
 
+	MetadataOptions() :
+		bOutputOnlyMetadata(false),
+		bOnlyMetadataKeys(false),
+		bAllowMissingKeys(false) { }
+};
+
+} // namespace internal
 
 //Contains most of the algorithmic functionality.
 class UnconvertFromZDW_Base
@@ -117,6 +131,7 @@ public:
 
 	void printError(const std::string &exeName, const std::string &inFileName);
 
+	void outputNonEmptyColumnHeader(bool bFlag = true) { this->bOutputNonEmptyColumnHeader = bFlag; }
 	ERR_CODE readHeader();
 	bool setNamesOfColumnsToOutput(const std::string& csv_str, COLUMN_INCLUSION_RULE inclusionRule);
 	bool setNamesOfColumnsToOutput(const std::vector<std::string> &csv_vector, COLUMN_INCLUSION_RULE inclusionRule);
@@ -124,10 +139,18 @@ public:
 
 	ERR_CODE GetSchema(std::ostream& stream);
 
+	void setMetadataOptions(const internal::MetadataOptions& options)
+	{
+		this->metadataOptions = options;
+	}
+
 protected:
 	ERR_CODE outputDescToFile(const std::vector<std::string>& columnNames,
-		const char* outputDir, const char* filestub, const char* ext);
+		const std::string& outputDir, const char* filestub, const char* ext);
 	ERR_CODE outputDescToStdOut(const std::vector<std::string>& columnNames);
+
+	ERR_CODE outputMetadataToFile(const std::string& outputDir, const char* filestub) const;
+	ERR_CODE outputMetadataToStdOut() const;
 
 	size_t readBytes(void* buf, const size_t len, const bool bHaltOnReadError = true);
 	size_t skipBytes(const size_t len);
@@ -142,12 +165,14 @@ protected:
 
 	void cleanupBlock();
 	ERR_CODE parseBlockHeader();
+	std::string getBlockHeaderString() const;
 
 	size_t llutoa(ULONGLONG value);
 	size_t lltoa(SLONGLONG value);
 
 	ULONG exportFileLineLength;
 	ULONG virtualLineLength;
+	std::map<std::string, std::string> metadata; //version 11+
 	std::vector<char *> dictionary; //version 9+
 	std::vector<ULONG> dictionary_memblock_size;
 	internal::UniquesPart *uniques;  //version 1-8
@@ -173,8 +198,10 @@ protected:
 	BufferedInput *input;
 
 	const bool bOutputDescFileOnly; //if set, only output the .desc file, but don't unconvert any data rows
+
 	const bool bShowStatus, bQuiet;
 	const bool bTestOnly;          //if set, only validate that data appear to be good without unconverting
+	bool bOutputNonEmptyColumnHeader; //if set, output a header line listing non-empty columns at the start of each file block
 	bool bShowBasicStatisticsOnly; //if set, show header statistics of data and exit
 	bool bFailOnInvalidColumns; //if invalid columns are supplied, do we error out?
 	std::map<std::string, int unsigned> namesOfColumnsToOutput;
@@ -182,6 +209,7 @@ protected:
 	bool bOutputEmptyMissingColumns; //if set, output an empty column
 
 	//Header info.
+	internal::MetadataOptions metadataOptions;
 	int indexForVirtualBaseNameColumn;
 	int indexForVirtualRowColumn;
 	std::vector<std::string> columnNames;
@@ -205,6 +233,7 @@ protected:
 	{
 		ZDW_BEGIN,
 		ZDW_PARSE_BLOCK_HEADER,
+		ZDW_OUTPUT_BLOCK_HEADER,
 		ZDW_GET_NEXT_ROW,
 		ZDW_FINISHING,
 		ZDW_END
@@ -228,6 +257,8 @@ private:
 	std::string getColumnDesc(const std::string& name, UCHAR type, size_t index,
 		const std::string& name_type_separator, const std::string& delimiter) const;
 
+	ERR_CODE outputMetadata(FILE* out) const;
+
 	size_t currentRowNumber;
 };
 
@@ -245,6 +276,7 @@ public:
 protected:
 	void outputDefault(T& buffer, const UCHAR type);
 	ERR_CODE parseNextBlock(T& buffer);
+	bool printBlockHeader(T& buffer);
 	ERR_CODE readNextRow(T& buffer);
 };
 
@@ -304,6 +336,8 @@ public:
 
 	//output desc.sql file to {outputDir} directory
 	bool OutputDescToFile(const std::string &outputDir);
+
+	std::vector<std::pair<uint64_t, std::string> > getFileLineage();
 
 protected:
 	ERR_CODE handleZDWParseBlockHeader();
