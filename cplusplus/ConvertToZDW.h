@@ -29,7 +29,7 @@ class ConvertToZDW
 {
 public:
 	//Version info
-	static int CONVERT_ZDW_CURRENT_VERSION; //TODO temp non-const for version11 migration
+	static const int CONVERT_ZDW_CURRENT_VERSION;
 	static const char CONVERT_ZDW_VERSION_TAIL[3];
 
 	enum Compressor {
@@ -86,9 +86,6 @@ public:
 		delete[] minmaxset;
 		delete[] columnSize;
 	}
-
-	//TODO Temporary feature flag for migration to version 11 -- remove after migration
-	void enableVersion11() { m_Version = CONVERT_ZDW_CURRENT_VERSION = 11; }
 
 	void setStatusOutputCallback(StatusOutputCallback cb) { statusOutput = cb; }
 

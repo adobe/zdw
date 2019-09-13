@@ -55,7 +55,6 @@ void usage(const char* executable)
 		"\t--zargs=X          arguments to pass in to the file compression process\n"
 		"\t--mem-limit=<MB>   limit the MB of RAM used (default=3072 MB)\n"
 		"\n"
-		"\t--version11                feature flag to enable creation of v11 file format (i.e., w/ metadata block in header)\n"
 		"\t--metadata:<key>=<value>   supply a key-value pair to store as file metadata for every file being converted\n"
 		"\t--metadata-file=<filename> supply a filepath to specify key-value pairs (formatted as '<key>=<value>' pairs, each on a separate line) to store as file metadata for every file being converted\n"
 		"\n"
@@ -113,7 +112,6 @@ int main(int argc, char* argv[])
 	const char* pOutputDir = NULL; //default = current dir
 	const char* zArgs = NULL;
 	map<string, string> metadata;
-	bool bVersion11EnableFlag = false; //TODO temp feature flag for version 10 migration -- remove on completion
 
 	//Parse flags.
 	int i;
@@ -177,11 +175,6 @@ int main(int argc, char* argv[])
 							zArgs = flag + 6;
 							break;
 						}
-						if (!strcmp(flag, "version11"))
-						{
-							bVersion11EnableFlag = true;
-							break;
-						}
 					}
 					//any other "--text" param is invalid
 					usage(program);
@@ -222,8 +215,6 @@ int main(int argc, char* argv[])
 			char filestub[1024];
 			ConvertToZDW convert(bQuiet, bStreamingInput);
 			convert.compressor = compressor;
-			if (bVersion11EnableFlag)
-				convert.enableVersion11();
 			if (trimTrailingSpaces)
 				convert.trimTrailingSpaces();
 			const ConvertToZDW::ERR_CODE res = convert.convertFile(argv[i], program, validate, filestub, pOutputDir, zArgs, metadata);
