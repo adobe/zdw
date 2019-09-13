@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <ostream>
+#include <sstream>
 #include <algorithm>
 #include <set>
 #include "zdw_column_type_constants.h"
@@ -220,11 +221,10 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 			string cmd;
 			const size_t len = inFileName.size();
 			if (len >= 4 && !strcmp(inFileName.c_str() + len - 3, ".gz")) {
-				//Internal uncompression of .gz files.
-				input = new BufferedInput(inFileName.c_str(), 16 * 1024, true);
-				return;
-			}
-			if (len >= 5 && !strcmp(inFileName.c_str() + len - 4, ".bz2")) {
+				cmd = "zcat ";
+				cmd += inFileName;
+				cmd.append(" 2>/dev/null"); //we don't need to see any chatter -- we output all relevant error codes ourselves
+			} else if (len >= 5 && !strcmp(inFileName.c_str() + len - 4, ".bz2")) {
 				//Streaming uncompression of .bz2 files.
 				cmd = "bzip2 -d --stdout ";
 				cmd += inFileName;
@@ -238,7 +238,7 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 				cmd += inFileName;
 			}
 
-			input = new BufferedInput(cmd.c_str());
+			input = new BufferedInput(cmd);
 		}
 	} else {
 		//No filename specified -- read ZDW data from stdin.
@@ -256,6 +256,13 @@ UnconvertFromZDW_Base::~UnconvertFromZDW_Base()
 	delete[] this->outputColumns;
 	delete[] this->row;
 	delete this->input;
+}
+
+string UnconvertFromZDW_Base::getVersion()
+{
+	std::ostringstream str;
+	str << UNCONVERT_ZDW_VERSION << UNCONVERT_ZDW_VERSION_TAIL;
+	return str.str();
 }
 
 //**********************************************

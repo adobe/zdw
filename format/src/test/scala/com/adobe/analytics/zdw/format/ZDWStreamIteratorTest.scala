@@ -13,7 +13,7 @@ package com.adobe.analytics.zdw.format
 
 import java.io._
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.{Date, TimeZone}
 
 import scala.collection.JavaConverters._
 
@@ -53,7 +53,11 @@ class ZDWStreamIteratorTest extends BasicSpec {
   }
 
   // Recreate the formatting unconvertDWfile would have done
-  private[this] val sqlValueDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  private[this] val sqlValueDateFormat = {
+    val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    format.setTimeZone(TimeZone.getTimeZone("UTC"))
+    format
+  }
   private[this] def toSQLValueString(value: Any): String = {
     value match {
       case isNull if isNull == null => ""

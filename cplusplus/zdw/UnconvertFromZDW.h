@@ -13,10 +13,10 @@
 #ifndef UNCONVERTFROMZDW_H
 #define UNCONVERTFROMZDW_H
 
-#include "zdw/includes.h"
-#include "zdw/BufferedInput.h"
-#include "zdw/BufferedOutput.h"
-#include "zdw/status_output.h"
+#include "includes.h"
+#include "BufferedInput.h"
+#include "BufferedOutput.h"
+#include "status_output.h"
 
 #include <map>
 #include <set>
@@ -117,6 +117,8 @@ public:
 	virtual ~UnconvertFromZDW_Base();
 
 	void setStatusOutputCallback(StatusOutputCallback cb) { statusOutput = cb; }
+
+	static std::string getVersion();
 
 	//Common API.
 	std::vector<std::string> getColumnNames() const { return this->columnNames; }

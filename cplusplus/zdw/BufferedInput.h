@@ -27,34 +27,27 @@ namespace zdw {
 class BufferedInput
 {
 public:
-	// either open a pipe with a command, and read input from the pipe,
-	// or open a gz file and read via zlib API
-	BufferedInput(const char* command, const size_t capacity = 16 * 1024, bool is_gz_file = false)
-		: fp(NULL)
-		, gzFp(NULL)
+	// open a pipe via a command and read input from the pipe
+	BufferedInput(const std::string& command, const size_t capacity = 16 * 1024)
+		: command(command)
+		, fp(NULL)
 		, buffer(NULL)
 		, capacity(capacity)
 		, index(0), length(0)
 		, bEOF(false)
 		, bFromStdin(false)
-		, is_gz_file(is_gz_file)
 	{
-		assert(command);
-		this->command = command;
-
 		open();
 	}
 
 	// read from standard input
 	BufferedInput()
 		: fp(NULL)
-		, gzFp(NULL)
 		, buffer(NULL)
 		, capacity(0)
 		, index(0), length(0)
 		, bEOF(false)
 		, bFromStdin(true)
-		, is_gz_file(false)
 	{
 	}
 
@@ -65,27 +58,17 @@ public:
 	}
 
 	void close() {
-		if (is_gz_file) {
-			if (gzFp) {
-				gzclose(gzFp);
-				gzFp = NULL;
-			}
-		} else if (fp) {
+		if (fp) {
 			pclose(fp);
 			fp = NULL;
 		}
 	}
-	void rewind() {
+	bool rewind() {
 		bEOF = false;
 		index = length = 0;
-		if (is_gz_file) {
-			if (gzFp)
-				gzrewind(gzFp);
-		} else {
-			assert(!command.empty());
-			close();
-			open();
-		}
+		assert(!command.empty());
+		close();
+		return open();
 	}
 
 	//Returns: whether any more data can be returned
@@ -99,7 +82,7 @@ public:
 	}
 
 	//Returns: whether file handle appears to be open
-	bool is_open() const { return (this->fp != NULL) || this->bFromStdin || this->gzFp; }
+	bool is_open() const { return (this->fp != NULL) || this->bFromStdin; }
 
 	//Input source.
 	//Either must be set explicitly in order to avoid inadvertent reads from an unexpected source.
@@ -111,13 +94,7 @@ public:
 	{
 		if (eof())
 			return false;
-		if (is_gz_file) {
-			if (!this->gzFp)
-				return false;
-		} else if (!this->fp) {
-			return false;
-		}
-		return true;
+		return this->fp != NULL;
 	}
 
 	void refill_buffer()
@@ -125,48 +102,38 @@ public:
 		this->index = this->length = 0;
 		do {
 			//Iterate reads when we don't receive the entire buffer immediately.
-			if (is_gz_file)
-			{
-				this->length += gzread(this->gzFp, this->buffer + this->length,
-					this->capacity - this->length);
-				this->bEOF = gzeof(this->gzFp) != 0;
-			} else {
-				this->length += fread(this->buffer + this->length,
-					1, this->capacity - this->length, this->fp);
-				this->bEOF = feof(this->fp) != 0;
-			}
+			this->length += fread(this->buffer + this->length,
+				1, this->capacity - this->length, this->fp);
+			this->bEOF = feof(this->fp) != 0;
 		} while (this->length < this->capacity && !this->bEOF);
 	}
 
-	const char* getline(char* buf, const size_t size)
+	//Stitch together multiple lines of text with embedded newlines
+	const char* getrow(char *row, int rowSize)
 	{
-		assert(buf);
-		assert(size);
+		int len = 0;
 
-		if (this->bFromStdin)
-			return fgets(buf, size, stdin);
+		for (;;)
+		{
+			const char *str = this->getline(row + len, rowSize - len);
+			if (!str)
+				return len ? row : NULL;
 
-		const size_t size_minus_1 = size - 1;
-		size_t out_pos = 0;
-		while (can_read_more_data()) {
-			while (this->index < this->length) {
-				if (out_pos == size_minus_1) {
-					//Filled output buffer
-					buf[out_pos] = 0;
-					return buf;
-				}
-				const char ch = this->buffer[this->index++];
-				buf[out_pos++] = ch;
-				if (ch == '\n') {
-					buf[out_pos] = 0;
-					return buf;
-				}
-			}
+			len += strlen(str);
+			if (len >= rowSize)
+				break; //buffer is full -- can't read in any more data
 
-			refill_buffer();
+			if (row[len - 1] != '\n') //no potentially embedded newline to check for
+				break;
+
+			int e = 2; //walk backwards from the character before observed newline
+			while (e <= len && row[len - e] == '\\')
+				++e;
+			if (!(e % 2)) //odd number (of preceding backslashes) indicates embedded newline -- need to read more of the row
+				break;
 		}
 
-		return out_pos ? buf : NULL;
+		return row;
 	}
 
 	//Returns: number of bytes read
@@ -206,14 +173,8 @@ public:
 			{
 				//Buffer is not large enough to store the rest of the requested data.
 				//Just pass the rest of the data through without buffering.
-				if (is_gz_file)
-				{
-					bytesRead += gzread(this->gzFp, data, size);
-					this->bEOF = gzeof(this->gzFp) != 0;
-				} else {
-					bytesRead += fread(data, 1, size, this->fp);
-					this->bEOF = feof(this->fp) != 0;
-				}
+				bytesRead += fread(data, 1, size, this->fp);
+				this->bEOF = feof(this->fp) != 0;
 
 				//Buffer is now empty -- refill next call
 				this->index = this->length = 0;
@@ -262,12 +223,8 @@ public:
 		//no more data to be read
 		if (eof())
 			return 0;
-		if (is_gz_file) {
-			if (!this->gzFp)
-				return 0;
-		} else if (!this->fp) {
+		if (!this->fp)
 			return 0;
-		}
 
 		const size_t bytesInBuffer = this->length - this->index;
 		if (size <= bytesInBuffer) {
@@ -286,58 +243,74 @@ public:
 		//2. Skip ahead the remaining number of bytes.
 		const size_t blocks = size / BLOCK_SIZE;
 		for (i = 0; i < blocks; ++i) {
-			if (is_gz_file)
-			{
-				bytes_read = gzread(this->gzFp, tempBlock, BLOCK_SIZE);
-			} else {
-				bytes_read = fread(tempBlock, 1, BLOCK_SIZE, this->fp);
-			}
+			bytes_read = fread(tempBlock, 1, BLOCK_SIZE, this->fp);
 			advanced += bytes_read;
 			size -= bytes_read;
 		}
 		assert(size < BLOCK_SIZE);
-		if (is_gz_file)
-		{
-			advanced += gzread(this->gzFp, tempBlock, size);
-			this->bEOF = gzeof(this->gzFp) != 0;
-		} else {
-			advanced += fread(tempBlock, 1, size, this->fp);
-			this->bEOF = feof(this->fp) != 0;
-		}
+		advanced += fread(tempBlock, 1, size, this->fp);
+		this->bEOF = feof(this->fp) != 0;
 
 		return advanced;
 	}
 
-	void open()
+	bool open()
 	{
-		assert(!gzFp);
 		assert(!fp);
 
-		if (is_gz_file)
-			gzFp = gzopen(command.c_str(), "rb");
-		else
-			fp = popen(command.c_str(), "r");
+		fp = popen(command.c_str(), "r");
 
-		if (gzFp || fp)
+		if (fp)
 		{
 			if (!this->buffer) {
 				assert(capacity > 0);
 				this->buffer = new char[capacity];
 			}
+			return true;
 		}
+		return false;
 	}
 
 private:
+	const char* getline(char* buf, const size_t size)
+	{
+		assert(buf);
+		assert(size);
+
+		if (this->bFromStdin)
+			return fgets(buf, size, stdin);
+
+		const size_t size_minus_1 = size - 1;
+		size_t out_pos = 0;
+		while (can_read_more_data()) {
+			while (this->index < this->length) {
+				if (out_pos == size_minus_1) {
+					//Filled output buffer
+					buf[out_pos] = 0;
+					return buf;
+				}
+				const char ch = this->buffer[this->index++];
+				buf[out_pos++] = ch;
+				if (ch == '\n') {
+					buf[out_pos] = 0;
+					return buf;
+				}
+			}
+
+			refill_buffer();
+		}
+
+		return out_pos ? buf : NULL;
+	}
+
 	std::string command;
 	FILE* fp;
-	gzFile gzFp;
 	char *buffer;
 	size_t capacity;
 
 	size_t index, length; //data that is sitting in the buffer
 	bool bEOF;
 	bool bFromStdin; //if set, read from stdin instead of 'fp'
-	bool is_gz_file;
 };
 
 } // namespace zdw

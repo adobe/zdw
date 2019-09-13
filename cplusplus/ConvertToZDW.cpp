@@ -70,8 +70,8 @@ inline bool dump_trimmed_row_to_temp_file(FILE* fp, const vector<char*>& rowColu
 namespace adobe {
 namespace zdw {
 
-int ConvertToZDW::CONVERT_ZDW_CURRENT_VERSION = 10; //TODO temp non-const for version 11 migration
-const char ConvertToZDW::CONVERT_ZDW_VERSION_TAIL[3] = "a";
+const int ConvertToZDW::CONVERT_ZDW_CURRENT_VERSION = 11;
+const char ConvertToZDW::CONVERT_ZDW_VERSION_TAIL[3] = "";
 
 const char ConvertToZDW::ERR_CODE_TEXTS[ERR_CODE_COUNT][30] = {
 	"OK","NO_ARGS","CONVERSION_FAILED","UNTAR_FAILED","MISSING_DESC_FILE","MISSING_SQL_FILE",
@@ -623,12 +623,6 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 		statusOutput(ERROR, "Invalid metadata parameter\n");
 		return BAD_METADATA_PARAM;
 	}
-	if (!metadata.empty() && CONVERT_ZDW_CURRENT_VERSION < 11)
-	{
-		//TODO remove post v11 migration
-		statusOutput(ERROR, "Metadata values are not supported before version 11\n");
-		return BAD_METADATA_PARAM;
-	}
 
 	string zdwFile;
 
@@ -678,7 +672,6 @@ ConvertToZDW::ERR_CODE ConvertToZDW::processFile(
 	fwrite(&m_Version, 1, 2, out);
 
 	//Write metadata block.
-	if (CONVERT_ZDW_CURRENT_VERSION == 11) //TODO temp feature flag hack for migration from version 10 to version 11
 	{
 		ULONG metadata_length = 0;
 		map<string, string>::const_iterator it;
@@ -997,7 +990,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	fclose(in);
 
 	map<string, string> inMetadata = metadata;
-	if (inMetadata.empty() && CONVERT_ZDW_CURRENT_VERSION >= 11) {
+	if (inMetadata.empty()) {
 		//Default to .metadata file contents, if present.
 		sprintf(command, "%s.metadata", filestub);
 		const int res = loadMetadataFile(command, inMetadata);
