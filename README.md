@@ -56,7 +56,7 @@ SQL column types.  The list of supported types are:
 |-----------|-------------|-----------------|----------------|
 | VARCHAR | 0 | String | StringType |
 | TEXT | 1 | String | StringType |
-| DATETIME | 2 | java.util.Date | TimestampType |
+| DATETIME | 2 | java.util.Date in UTC timezone | TimestampType |
 | CHAR_2 | 3 | String | StringType |
 | CHAR | 6 | String | StringType |
 | TINY | 7 | Short | ShortType |
