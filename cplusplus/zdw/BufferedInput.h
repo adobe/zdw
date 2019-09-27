@@ -108,34 +108,6 @@ public:
 		} while (this->length < this->capacity && !this->bEOF);
 	}
 
-	//Stitch together multiple lines of text with embedded newlines
-	const char* getrow(char *row, int rowSize)
-	{
-		int len = 0;
-
-		for (;;)
-		{
-			const char *str = this->getline(row + len, rowSize - len);
-			if (!str)
-				return len ? row : NULL;
-
-			len += strlen(str);
-			if (len >= rowSize)
-				break; //buffer is full -- can't read in any more data
-
-			if (row[len - 1] != '\n') //no potentially embedded newline to check for
-				break;
-
-			int e = 2; //walk backwards from the character before observed newline
-			while (e <= len && row[len - e] == '\\')
-				++e;
-			if (!(e % 2)) //odd number (of preceding backslashes) indicates embedded newline -- need to read more of the row
-				break;
-		}
-
-		return row;
-	}
-
 	//Returns: number of bytes read
 	size_t read(void* data, size_t size)
 	{
@@ -271,7 +243,15 @@ public:
 		return false;
 	}
 
-private:
+	// Obtains a line of data (or as much of a line as can fit) into the supplied buffer.
+	//
+	// If there isn't enough data in the buffer for the entire line, as much of the line as possible will be stored
+	// in the buffer, including a null terminator.
+	//
+	// The filled buffer will include newline termination, if there is newline termination available (e.g., a
+	// line at the end of the file with no terminating newline will result in a buffer without newline termination)
+	//
+	// Returns a pointer to the filled buffer or nullptr if there is no more data to read into the buffer.
 	const char* getline(char* buf, const size_t size)
 	{
 		assert(buf);
@@ -303,6 +283,7 @@ private:
 		return out_pos ? buf : NULL;
 	}
 
+private:
 	std::string command;
 	FILE* fp;
 	char *buffer;
