@@ -283,6 +283,7 @@ public:
 		return out_pos ? buf : NULL;
 	}
 
+private:
 	std::string command;
 	FILE* fp;
 	char *buffer;
