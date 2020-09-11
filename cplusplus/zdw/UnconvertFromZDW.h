@@ -20,6 +20,7 @@
 
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <sys/stat.h>
@@ -61,6 +62,14 @@ enum COLUMN_INCLUSION_RULE
 	SKIP_INVALID_COLUMN,
 	EXCLUDE_SPECIFIED_COLUMNS,
 	PROVIDE_EMPTY_MISSING_COLUMNS
+};
+
+
+class ZDWException : public std::runtime_error
+{
+public:
+	explicit ZDWException(const ERR_CODE errcode);
+	ERR_CODE code;
 };
 
 
