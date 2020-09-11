@@ -161,6 +161,13 @@ const char UnconvertFromZDW_Base::ERR_CODE_TEXTS[ERR_CODE_COUNT + 1][30] = {
 };
 //*****************************
 
+
+ZDWException::ZDWException(const ERR_CODE errcode)
+	: runtime_error(UnconvertFromZDW_Base::ERR_CODE_TEXTS[errcode])
+	, code(errcode)
+{ }
+
+
 //*****************************
 //API maintenance -- old breakdown currently uses this text to detect whether zdw unconvert failed or not
 void UnconvertFromZDW_Base::printError(const string &exeName, const string &fileName)
@@ -278,7 +285,7 @@ size_t UnconvertFromZDW_Base::readBytes(
 	{
 		printError(this->exeName, getInputFilename(this->inFileName));
 		delete this->input;
-		exit(GZREAD_FAILED);
+		throw ZDWException(GZREAD_FAILED);
 	}
 	return result;
 }
@@ -889,7 +896,12 @@ void UnconvertFromZDW_Base::readDictionaryChunk(const size_t size)
 		this->dictionary_memblock_size[numChunks - 1] -= bytesToStitch;
 	}
 
-	readBytes(chunk + bytesToStitch, size);
+	try {
+		readBytes(chunk + bytesToStitch, size);
+	} catch (ZDWException &ex) {
+		delete[] chunk;
+		throw;
+	}
 
 	this->dictionary.push_back(chunk);
 	this->dictionary_memblock_size.push_back(size + bytesToStitch);
