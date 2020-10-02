@@ -285,6 +285,7 @@ size_t UnconvertFromZDW_Base::readBytes(
 	{
 		printError(this->exeName, getInputFilename(this->inFileName));
 		delete this->input;
+		this->input = NULL;
 		throw ZDWException(GZREAD_FAILED);
 	}
 	return result;
