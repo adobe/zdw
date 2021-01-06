@@ -4,6 +4,7 @@ project(zdw)
 add_definitions(-D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS -Wall -Wold-style-cast)
 
 add_library(zdw
+	BufferedInput.cpp
 	BufferedOutput.cpp
 	ConvertToZDW.cpp
 	ConvertToZDW.h

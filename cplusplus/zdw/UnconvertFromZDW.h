@@ -23,7 +23,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <sys/stat.h>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -101,10 +100,11 @@ struct MetadataOptions
 	bool bAllowMissingKeys;
 	std::set<std::string> keys;
 
-	MetadataOptions() :
-		bOutputOnlyMetadata(false),
-		bOnlyMetadataKeys(false),
-		bAllowMissingKeys(false) { }
+	MetadataOptions()
+		: bOutputOnlyMetadata(false)
+		, bOnlyMetadataKeys(false)
+		, bAllowMissingKeys(false)
+	{ }
 };
 
 } // namespace internal
@@ -148,10 +148,7 @@ public:
 
 	ERR_CODE GetSchema(std::ostream& stream);
 
-	void setMetadataOptions(const internal::MetadataOptions& options)
-	{
-		this->metadataOptions = options;
-	}
+	void setMetadataOptions(const internal::MetadataOptions& options) { this->metadataOptions = options; }
 
 protected:
 	ERR_CODE outputDescToFile(const std::vector<std::string>& columnNames,
@@ -326,8 +323,7 @@ public:
 	{
 		statusOutput = defaultStatusOutputCallback;
 	}
-	~UnconvertFromZDWToMemory()
-	{ }
+	~UnconvertFromZDWToMemory();
 
 	ERR_CODE getRow(const char** outColumns);
 

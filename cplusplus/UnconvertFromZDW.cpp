@@ -16,12 +16,14 @@
 
 #include "zdw/UnconvertFromZDW.h"
 
-#include <stdint.h>
+#include <algorithm>
 #include <math.h>
 #include <ostream>
-#include <sstream>
-#include <algorithm>
 #include <set>
+#include <sstream>
+#include <stdint.h>
+#include <string.h>
+#include <sys/stat.h>
 #include "zdw_column_type_constants.h"
 
 using namespace adobe::zdw::internal;
@@ -1839,10 +1841,15 @@ void UnconvertFromZDW_Base::EnableVirtualExportRowColumn()
 	indexForVirtualRowColumn = USE_VIRTUAL_COLUMN;
 }
 
+
 //***************************************************************
 //Explicit template class instantiations.
 template class UnconvertFromZDWToFile<BufferedOutput>;
 template class UnconvertFromZDWToFile<BufferedOrderedOutput>;
+
+
+UnconvertFromZDWToMemory::~UnconvertFromZDWToMemory()
+{ }
 
 //***************************************************************
 //
