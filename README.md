@@ -7,11 +7,11 @@ accessing large segments of the data, and outputting data row-by-row, as opposed
 
 ZDW uses a combination of:
 
-* A global, sorted dictionary of unique strings across all text columns
+* A global, sorted dictionary of unique strings across all text columns for normalization
 * Numeric and text values, as specified in an accompanying SQL-like schema file
 * Variable byte-size values for integers as well as dictionary indexes
 * Minimum value baseline per column for integers and dictionary indexes, to reduce the magnitude of the value needed on each row of that column
-* Bit-flagging repeat column values across consecutive rows (similar approach to run-length encoding, but applied on a per-row basis)
+* Bit-flagging repeat column values across consecutive rows (similar approach to run-length encoding, but applied to the same column across rows)
 
 It has evolved through multiple internal iterations (at version 10 as of September 2018 and version 11 as of September 2019).
 See [ZDW v10 format](ZDW%20v10%20format.png) for a diagram of the ZDW v10 format.
@@ -21,7 +21,7 @@ See [ZDW v10 format](ZDW%20v10%20format.png) for a diagram of the ZDW v10 format
 The ZDW compressor performs two passes over the uncompressed data.
 The first pass compiles, sorts and outputs a header, global string dictionary, per-column offset sizes and baseline values for numeric columns.
 The second pass converts and outputs the compressed row-oriented data.
-When a standard compression flag is applied, this output data is piped into the respective compression binary (e.g., 'xz', 'gz') for additional compression.
+When a standard compression flag is applied, this output data is piped into the respective compression binary (e.g., 'zstd', 'xz', 'gz') for additional compression.
 
 Multiple internal data blocks are supported in order to keep dictionary sizes manageable.
 These blocks are for memory management and are not currently intended to provide intra-file seek optimizations.
@@ -31,18 +31,19 @@ These blocks are for memory management and are not currently intended to provide
 ZDW is designed to complement standard text or binary compression algorithms layered on top.
 
 As ZDW is best suited for highly efficient compression of long-term archival data,
-the current recommended compression to apply on top of the ZDW file format is XZ (LZMA).
-XZ incurs a one-time compute-intensive compression cost, then has a reasonable compute cost for uncompressing one or more times.
-Applying XZ compression is enabled by supplying the '-J' option to the compressor.
-Additional compressor command line options, such as invoking parallel XZ compression on large datasets, can be applied
-via an additional '--zargs' command line option to the compressor, e.g., "--zargs='-7 --threads=2'".
+the current recommended compression to apply on top of the ZDW file format is ZSTD.
+ZSTD incurs a one-time compute-intensive compression cost, then requires a low compute cost for uncompressing one or more times.
+Applying ZSTD compression is enabled by supplying the '-z' option to the compressor.
+Additional compressor command line options, such as invoking parallel ZSTD compression on large datasets, can be applied
+via an additional '--zargs' command line option to the compressor, e.g.,
+"-z --zargs='-17 -T0'" for parallel ZSTD with -17 compression, or
+"-J --zargs='-7 --threads=2'" for parallel XZ compression at the -7 level.
 
-Less efficient formats like GZ (gzip) may alternatively be used,
-with a positive trade-off of reducing compression compute time and requiring about
-half the CPU cycles for uncompression compared to XZ,
-while incurring an anticipated reduction in compression efficiency of 25%.
+Less efficient formats like XZ (lzma) or GZ (gzip) may alternatively be used.
+XZ may make files with certain data patterns smaller, while requiring more compute time for compression and uncompression.
+GZ may reduce compression compute time but will likely produce larger files relative to XZ or ZSTD.
 
-Expected compression efficiency is substantially higher than alternative formats
+Expected compression efficiency is substantially higher than alternative formats for well-structured data
 like [ORC](https://orc.apache.org/specification/ORCv1/) and [Parquet](https://parquet.apache.org/documentation/latest/).
 
 Sample benchmark data, to illustrate expected efficiency compressing files with varying schema widths and properties, can be found in the [test-files](test-files) directory.
