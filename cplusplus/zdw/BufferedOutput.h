@@ -42,12 +42,16 @@ private:
 		//Write data to the start of the buffer.
 		inline void write(const void* data, const size_t dataSize);
 
+		// Store a pointer to persistent data to write later
+		inline void writePtr(const void* data, const size_t dataSize);
+
 		inline void reset() { this->size = 0; }
 
-		inline void print(std::string& str) const { str.append(this->pBuffer, this->size); }
+		inline void print(std::string& str) const;
 
 	private:
-		char* pBuffer;
+		char* pBuffer; //copy of passed data
+		const void *pos; //pointer to passed data
 		int size;
 		int unsigned capacity;
 	};
@@ -57,6 +61,7 @@ public:
 	~BufferedOrderedOutput();
 
 	bool write(const void* data, const size_t size);
+	bool writePtr(const void* data, const size_t size);
 
 	//Have an empty string outputted on the current column.
 	void writeEmpty();
@@ -84,6 +89,8 @@ private:
 	std::vector<int> outputIndex; //input --> output index remapping
 	std::vector<ByteBuffer> outputColumnBuffer; //stores data for the column at each index
 	int curColumnIndex;
+
+	std::string outStr; //persist buffer to avoid reallocs on larger lines
 };
 
 
@@ -102,7 +109,7 @@ public:
 	bool flush();
 
 	bool write(const void* data, const size_t size);
-
+	bool writePtr(const void* data, const size_t size) { return write(data, size); }
 	void writeEmpty() { }
 
 	//Output a separator between columns.
@@ -152,7 +159,7 @@ public:
 	bool setOutputColumnOrder(const int* pOutputOrder, const int numColumns);
 
 	bool write(const void* data, const size_t size);
-
+	bool writePtr(const void* data, const size_t size) { return write(data, size); }
 	void writeEmpty() { }
 	bool writeSeparator(const void* /*data*/, const size_t /*size*/);
 	bool writeEndline(const void* /*data*/, const size_t /*size*/);

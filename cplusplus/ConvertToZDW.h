@@ -33,9 +33,11 @@ public:
 	static const char CONVERT_ZDW_VERSION_TAIL[3];
 
 	enum Compressor {
-		GZIP = 0,
-		BZIP2= 1,
-		XZ   = 2
+		GZIP  = 0,
+		BZIP2 = 1,
+		XZ    = 2, //lzma
+		FXZ   = 3, //fastlzma2
+		ZSTD  = 4  //zstandard
 	};
 
 	//Error codes
@@ -108,7 +110,10 @@ private:
 			case BZIP2:
 				return ".bz2";
 			case XZ:
+			case FXZ:
 				return ".xz";
+			case ZSTD:
+				return ".zst";
 			default:
 				return "";
 		}
@@ -122,6 +127,10 @@ private:
 				return "bzip2";
 			case XZ:
 				return "xz";
+			case FXZ:
+				return "fxz";
+			case ZSTD:
+				return "zstd";
 			default:
 				return "";
 		}

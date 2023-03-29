@@ -41,10 +41,12 @@ void usage(const char* executable)
 	else
 		exe = executable;
 
-	printf("Usage: %s [-d <dir>] [-(b|J|q|r|v)] [other options] file1 [file2] ...\n", exe);
+	printf("Usage: %s [-d <dir>] [-(b|J|Jf|z|q|r|v)] [other options] file1 [file2] ...\n", exe);
 	printf(
 		"\t-b  compress .zdw with bzip2 [default=use gzip]\n"
 		"\t-J  compress .zdw with xz [default=use gzip]\n"
+		"\t -Jf  compress to .zdw.xz file via fsx (applying fastlzma2 algorithm)\n"
+		"\t-z  compress .zdw with zstd\n"
 		"\t-d  output to directory <dir> [default=same directory as source file]\n"
 		"\t-i  streaming input from stdin; file1 is used as the implied name for the input stream\n"
 		"\t-q  quiet operation (no status or progress messages) [default=not quiet]\n"
@@ -123,7 +125,14 @@ int main(int argc, char* argv[])
 			switch (argv[i][1])
 			{
 				case 'b': compressor = ConvertToZDW::BZIP2; break;
-				case 'J': compressor = ConvertToZDW::XZ;    break;
+				case 'J':
+					if (argv[i][2] == 'f') {
+						compressor = ConvertToZDW::FXZ;
+					} else {
+						compressor = ConvertToZDW::XZ;
+					}
+					break;
+				case 'z': compressor = ConvertToZDW::ZSTD; break;
 				case 'd':
 					if (++i >= argc)
 					{
@@ -211,7 +220,6 @@ int main(int argc, char* argv[])
 			assert(!bStreamingInput || filenum == 0);
 			++filenum;
 
-			char filename[1024];
 			char filestub[1024];
 			ConvertToZDW convert(bQuiet, bStreamingInput);
 			convert.compressor = compressor;
@@ -234,10 +242,15 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Could not remove original %s file because conversion was not good\n", filestub);
 				} else {
 					//Delete files converted from.
-					sprintf(filename, "%s.desc.%s", filestub, convert.getInputFileExtension());
-					unlink(filename);
-					sprintf(filename, "%s.%s", filestub, convert.getInputFileExtension());
-					unlink(filename);
+					std::string filename = filestub;
+					filename += ".desc.";
+					filename += convert.getInputFileExtension();
+					unlink(filename.c_str());
+
+					filename = filestub;
+					filename += ".";
+					filename += convert.getInputFileExtension();
+					unlink(filename.c_str());
 				}
 			}
 		}

@@ -61,6 +61,8 @@ using std::vector;
 //version 10 -- support mediumtext and longtext column types
 //version 10a -- support header line output with non-empty column names for each file block
 //version 11 -- add metadata block to header
+//version 11a -- fix virtual_export_row output
+//version 11b -- add zstandard support
 
 
 namespace {
@@ -136,7 +138,7 @@ namespace adobe {
 namespace zdw {
 
 const int UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION = 11;
-const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "";
+const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "b";
 
 const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16 * 1024; //16K default
 
@@ -241,6 +243,11 @@ UnconvertFromZDW_Base::UnconvertFromZDW_Base(const string &fileName,
 			} else if (len >= 4 && !strcmp(inFileName.c_str() + len - 3, ".xz")) {
 				cmd = "xzcat ";
 				cmd += inFileName;
+			} else if (len >= 5 && !strcmp(inFileName.c_str() + len - 4, ".zst")) {
+				//Streaming uncompression of .zst files.
+				cmd = "zstd -d --stdout ";
+				cmd += inFileName;
+				cmd.append(" 2>/dev/null"); //we don't need to see any chatter -- we output all relevant error codes ourselves
 			} else {
 				//Streaming text.
 				cmd = "cat ";
@@ -1248,7 +1255,7 @@ void UnconvertFromZDW<T>::outputDefault(T& buffer, const UCHAR type)
 		case VIRTUAL_EXPORT_ROW:
 		{
 			const size_t currentRowStrSize = this->llutoa(GetCurrentRowNumber());
-			buffer.write(temp_buf, currentRowStrSize);
+			buffer.write(this->temp_buf + TEMP_BUF_LAST_POS - currentRowStrSize, currentRowStrSize);
 			break;
 		}
 		default:
@@ -1269,13 +1276,16 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 	char temp[64];
 	bool bColumnWritten = false;
 
+	IncrementCurrentRowNumber();
+
 	//1. Read 'sameness' bit flags.
 	readBytes(this->setColumns, this->numSetColumns); //bit flags -- are field values the same as in the previous row?
 
 	//2. Output column values.
 	for (size_t c = 0; c < this->numColumns; ++c)
 	{
-		if (this->columnType[c] == VISID_LOW) {
+		const UCHAR ct = this->columnType[c];
+		if (ct == VISID_LOW) {
 			//Output the visid_low value, if selected for output.
 			if (this->outputColumns[c] != IGNORE) {
 				if (bColumnWritten)
@@ -1301,7 +1311,7 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 				}
 				++u;
 
-				if (this->columnType[c] == VISID_HIGH) {
+				if (ct == VISID_HIGH) {
 					//Store the value for visid_low, to output when we get to its column index (if it's not excluded).
 					index = val.n + this->columnBase[c];
 					if (index > this->numVisitors)
@@ -1316,12 +1326,10 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 		if (bColumnWritten) //tab-delineated columns
 			buffer.writeSeparator(tab, 1);
 
-		IncrementCurrentRowNumber();
-
 		if (!this->columnSize[c])
 		{
-			outputDefault(buffer, this->columnType[c]);
-			//if (this->columnType[c] == VISID_HIGH) visid_low = 0;
+			outputDefault(buffer, ct);
+			//if (ct == VISID_HIGH) visid_low = 0;
 			//in order to write out a default value for visid_low, this logic should technically happen here, and in the "if (this->outputColumns[c] == IGNORE)" block above.
 			//However, since visid_low already defaults to 0 above, we don't actually need to execute this check and assignment and slow things down.
 		} else {
@@ -1337,7 +1345,7 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 			++u;
 
 			//4. Output this column's value, based on type.
-			switch (this->columnType[c])
+			switch (ct)
 			{
 				case VIRTUAL_EXPORT_FILE_BASENAME: assert(!"VIRTUAL_EXPORT_FILE_BASENAME should only get default value"); break;
 				case VIRTUAL_EXPORT_ROW: assert(!"VIRTUAL_EXPORT_ROW should only get default value"); break;
@@ -1355,10 +1363,10 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 						if (index > this->dictionarySize)
 							return CORRUPTED_DATA_ERROR;
 						pos = GetWord(index, row);
-						buffer.write(pos, strlen(pos));
+						buffer.writePtr(pos, strlen(pos));
 					} else {
 						//There's an empty field value.
-						outputDefault(buffer, this->columnType[c]);
+						outputDefault(buffer, ct);
 					}
 					break;
 				case VISID_HIGH:
@@ -1379,7 +1387,7 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 							temp[0] = static_cast<char>(chartuple);
 							if (temp[0] != '\\') {
 								if (!temp[0]) //there's an empty field for this column-row
-									outputDefault(buffer, this->columnType[c]);
+									outputDefault(buffer, ct);
 								else
 									buffer.write(temp, 1);
 							} else {

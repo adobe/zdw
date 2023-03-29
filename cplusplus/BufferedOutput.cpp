@@ -21,12 +21,14 @@ namespace zdw {
 
 BufferedOrderedOutput::ByteBuffer::ByteBuffer(int unsigned startSize)
 	: pBuffer(new char[startSize])
+	, pos(0)
 	, size(0)
 	, capacity(startSize)
 { }
 
 BufferedOrderedOutput::ByteBuffer::ByteBuffer(const ByteBuffer& rhs)
 	: pBuffer(new char[rhs.capacity])
+	, pos(rhs.pos == rhs.pBuffer ? pBuffer : rhs.pos)
 	, size(rhs.size)
 	, capacity(rhs.capacity)
 {
@@ -37,6 +39,7 @@ void BufferedOrderedOutput::ByteBuffer::swap(ByteBuffer& rhs)
 {
 	using std::swap;
 	swap(this->pBuffer, rhs.pBuffer);
+	swap(this->pos, rhs.pos);
 	swap(this->size, rhs.size);
 	swap(this->capacity, rhs.capacity);
 }
@@ -66,14 +69,31 @@ inline void BufferedOrderedOutput::ByteBuffer::write(const void* data, const siz
 		this->capacity = newSize;
 	}
 	memcpy(this->pBuffer, data, dataSize);
+	this->pos = this->pBuffer;
 	this->size = dataSize;
+}
+
+inline void BufferedOrderedOutput::ByteBuffer::writePtr(const void* data, size_t dataSize)
+{
+	this->pos = data;
+	this->size = dataSize;
+}
+
+inline void BufferedOrderedOutput::ByteBuffer::print(std::string& str) const
+{
+	str.append(static_cast<const char*>(this->pos), this->size);
 }
 
 
 BufferedOrderedOutput::BufferedOrderedOutput(FILE* fp)
 	: fp(fp)
 	, curColumnIndex(0)
-{ }
+{
+	if (fp) {
+		setbuf(fp, NULL); //disable additional buffering layer
+	}
+	this->outStr.reserve(16 * 1024);
+}
 
 BufferedOrderedOutput::~BufferedOrderedOutput()
 { }
@@ -89,6 +109,20 @@ bool BufferedOrderedOutput::write(const void* data, const size_t size)
 
 	//Save data for each column in a buffer for special reordering.
 	this->outputColumnBuffer[outIndex].write(data, size);
+	return true; //done for now -- column contents will be written out at the end of the line
+}
+
+bool BufferedOrderedOutput::writePtr(const void* data, const size_t size)
+{
+	//If we are reordering column outputs, then save a pointer to the output for when the row is complete.
+	assert(!this->outputIndex.empty());
+	const int unsigned outIndex = this->outputIndex[this->curColumnIndex++];
+
+	//Should not be calling write() for columns that are not written out to any location
+	assert(outIndex < this->outputColumnBuffer.size());
+
+	//Save data for each column in a buffer for special reordering.
+	this->outputColumnBuffer[outIndex].writePtr(data, size);
 	return true; //done for now -- column contents will be written out at the end of the line
 }
 
@@ -115,18 +149,18 @@ bool BufferedOrderedOutput::writeEndline(const void* data, const size_t size)
 	}
 
 	//Output column values in specified order.
+	assert(!this->outputColumnBuffer.empty());
+
 	//A single fwrite is noticeably faster than one for each column value.
-	std::string str;
-	str.reserve(this->outputColumnBuffer.size() * 16); //prepare an expected size
-	std::vector<ByteBuffer>::const_iterator colBuf;
-	for (colBuf = this->outputColumnBuffer.begin(); colBuf != this->outputColumnBuffer.end(); ++colBuf) {
-		if (colBuf != this->outputColumnBuffer.begin()) {
-			str.append(1, '\t'); //force column separators to be tabs for now
-		}
-		colBuf->print(str);
+	this->outStr.clear();
+	std::vector<ByteBuffer>::const_iterator colBuf = this->outputColumnBuffer.begin();
+	colBuf->print(this->outStr);
+	for ( ; colBuf != this->outputColumnBuffer.end(); ++colBuf) {
+		this->outStr.append(1, '\t'); //force column separators to be tabs for now
+		colBuf->print(this->outStr);
 	}
-	str.append(static_cast<const char*>(data), size); //append the endline chars
-	return (fwrite(str.c_str(), str.size(), 1, this->fp) == 1);
+	this->outStr.append(static_cast<const char*>(data), size); //append the endline chars
+	return (fwrite(this->outStr.c_str(), this->outStr.size(), 1, this->fp) == 1);
 }
 
 bool BufferedOrderedOutput::writeRawLine(const void* data, const size_t size)
@@ -176,7 +210,11 @@ BufferedOutput::BufferedOutput(FILE* fp, const size_t capacity)
 	, capacity(capacity)
 	, buffer(fp ? new char[capacity] : NULL)
 	, index(0)
-{ }
+{
+	if (fp) {
+		setbuf(fp, NULL); //disable additional buffering layer
+	}
+}
 
 BufferedOutput::~BufferedOutput()
 {

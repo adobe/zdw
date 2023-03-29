@@ -161,7 +161,7 @@ size_t BufferedInput::read(void* data, size_t size)
 size_t BufferedInput::skip(size_t size)
 {
 	//Read blocks for speed.
-	static const size_t BLOCK_SIZE = 16;
+	static const size_t BLOCK_SIZE = 4096;
 	char tempBlock[BLOCK_SIZE];
 	size_t i, bytes_read;
 
@@ -208,6 +208,7 @@ size_t BufferedInput::skip(size_t size)
 	}
 	assert(size < BLOCK_SIZE);
 	advanced += fread(tempBlock, 1, size, this->fp);
+
 	this->bEOF = feof(this->fp) != 0;
 
 	return advanced;
