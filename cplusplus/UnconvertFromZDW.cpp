@@ -61,6 +61,7 @@ using std::vector;
 //version 10 -- support mediumtext and longtext column types
 //version 10a -- support header line output with non-empty column names for each file block
 //version 11 -- add metadata block to header
+//version 11a -- fix virtual_export_row output
 
 
 namespace {
@@ -136,7 +137,7 @@ namespace adobe {
 namespace zdw {
 
 const int UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION = 11;
-const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "";
+const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "a";
 
 const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16 * 1024; //16K default
 
@@ -1248,7 +1249,7 @@ void UnconvertFromZDW<T>::outputDefault(T& buffer, const UCHAR type)
 		case VIRTUAL_EXPORT_ROW:
 		{
 			const size_t currentRowStrSize = this->llutoa(GetCurrentRowNumber());
-			buffer.write(temp_buf, currentRowStrSize);
+			buffer.write(this->temp_buf + TEMP_BUF_LAST_POST - currentRowStrSize, currentRowStrSize);
 			break;
 		}
 		default:
@@ -1268,6 +1269,8 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 	int tempLength;
 	char temp[64];
 	bool bColumnWritten = false;
+
+	IncrementCurrentRowNumber();
 
 	//1. Read 'sameness' bit flags.
 	readBytes(this->setColumns, this->numSetColumns); //bit flags -- are field values the same as in the previous row?
@@ -1315,8 +1318,6 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 
 		if (bColumnWritten) //tab-delineated columns
 			buffer.writeSeparator(tab, 1);
-
-		IncrementCurrentRowNumber();
 
 		if (!this->columnSize[c])
 		{
