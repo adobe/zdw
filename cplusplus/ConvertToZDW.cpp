@@ -194,7 +194,7 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 
 	zdw_cmd += zdwFile;
 
-	char cmd[2048];
+	string cmd;
 	if (this->bStreamingInput) {
 		//Stream from the series of .gz temp files.
 		string zcat_str = "zcat ";
@@ -203,22 +203,22 @@ ConvertToZDW::ERR_CODE ConvertToZDW::validate(
 			zcat_str += " ";
 		}
 		//Compare the two data pipes.
-		sprintf(cmd, "/bin/bash -c \"cmp <(%s) <(%s)\"", zdw_cmd.c_str(), zcat_str.c_str());
+		cmd = "/bin/bash -c \"cmp <(" + zdw_cmd + ") <(" + zcat_str + ")\"";
 	} else if (this->bTrimTrailingSpaces) {
 		//Stream ZDW file to 'cmp' (binary comparison) against a trimmed version of the original .sql file
 		assert(src_filenames.size() == 1);
 		string cat_str = zdw_path + "trim_spaces ";
 		cat_str += src_filenames[0];
-		sprintf(cmd, "/bin/bash -c \"cmp <(%s) <(%s)\"", zdw_cmd.c_str(), cat_str.c_str());
+		cmd = "/bin/bash -c \"cmp <(" + zdw_cmd + ") <(" + cat_str + ")\"";
 	} else {
 		//Stream ZDW file to 'cmp' (binary comparison) against the original .sql file
 		assert(src_filenames.size() == 1);
-		sprintf(cmd, "%s | cmp %s", zdw_cmd.c_str(), src_filenames[0].c_str());
+		cmd = zdw_cmd + " | cmp " + src_filenames[0];
 	}
 
 	if (!this->bQuiet)
-		statusOutput(INFO, "VALIDATION COMMAND: %s\n", cmd);
-	const int err = system(cmd);
+		statusOutput(INFO, "VALIDATION COMMAND: %s\n", cmd.c_str());
+	const int err = system(cmd.c_str());
 	return err == 0 ? OK : FILES_DIFFER;
 }
 
@@ -960,7 +960,6 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	const char* zArgs,    //(in) if not NULL (default), pass these arguments into file compressor
 	const map<string, string>& metadata) //(in) supply these key-value pairs as file metadata
 {
-	char command[2048];
 	FILE* in;
 
 	assert(infile);
@@ -981,8 +980,10 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	}
 
 	//Read .desc file.
-	sprintf(command, "%s.desc.%s", filestub, getInputFileExtension());
-	in = fopen(command, "r");
+	std::string command = filestub;
+	command += ".desc.";
+	command += getInputFileExtension();
+	in = fopen(command.c_str(), "r");
 	if (!in)
 		return MISSING_DESC_FILE;
 
@@ -994,8 +995,9 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	map<string, string> inMetadata = metadata;
 	if (inMetadata.empty()) {
 		//Default to .metadata file contents, if present.
-		sprintf(command, "%s.metadata", filestub);
-		const int res = loadMetadataFile(command, inMetadata);
+		command = filestub;
+		command += ".metadata";
+		const int res = loadMetadataFile(command.c_str(), inMetadata);
 		if (res > 0) //ignore -1: it's okay for file to be not present
 			return BAD_METADATA_FILE;
 	}
@@ -1017,8 +1019,10 @@ ConvertToZDW::ERR_CODE ConvertToZDW::convertFile(
 	if (this->bStreamingInput) {
 		in = stdin;
 	} else {
-		sprintf(command, "%s.%s", filestub, getInputFileExtension());
-		in = fopen(command, "r");
+		command = filestub;
+		command += ".";
+		command += getInputFileExtension();
+		in = fopen(command.c_str(), "r");
 		if (!in)
 			return MISSING_SQL_FILE; //couldn't read file
 	}

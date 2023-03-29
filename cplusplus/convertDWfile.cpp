@@ -220,7 +220,6 @@ int main(int argc, char* argv[])
 			assert(!bStreamingInput || filenum == 0);
 			++filenum;
 
-			char filename[1024];
 			char filestub[1024];
 			ConvertToZDW convert(bQuiet, bStreamingInput);
 			convert.compressor = compressor;
@@ -243,10 +242,15 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Could not remove original %s file because conversion was not good\n", filestub);
 				} else {
 					//Delete files converted from.
-					sprintf(filename, "%s.desc.%s", filestub, convert.getInputFileExtension());
-					unlink(filename);
-					sprintf(filename, "%s.%s", filestub, convert.getInputFileExtension());
-					unlink(filename);
+					std::string filename = filestub;
+					filename += ".desc.";
+					filename += convert.getInputFileExtension();
+					unlink(filename.c_str());
+
+					filename = filestub;
+					filename += ".";
+					filename += convert.getInputFileExtension();
+					unlink(filename.c_str());
 				}
 			}
 		}
