@@ -930,11 +930,7 @@ Done:
 			statusOutput(INFO, "Rows=%u\n", totalCnt);
 
 		//Now rename the temp file to the final name.
-		string cmd = "mv ";
-		cmd += temp_outfile_name;
-		cmd += " ";
-		cmd += zdwFile;
-		const int ret = system(cmd.c_str());
+		const int ret = rename(temp_outfile_name.c_str(), zdwFile.c_str());
 		if (ret == 0) {
 			if (!this->bQuiet)
 				statusOutput(INFO, "Done\n");
