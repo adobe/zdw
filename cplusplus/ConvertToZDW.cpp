@@ -54,6 +54,8 @@ using std::vector;
 //version 10 -- add support for mediumtext and longtext columns
 //version 10a -- version 11 support built in (use of v11 is disabled by default)
 //version 11 -- add metadata block to file header
+//version 11a -- add fxz support
+//version 11b -- add zstd support
 
 
 namespace {
@@ -71,7 +73,7 @@ namespace adobe {
 namespace zdw {
 
 const int ConvertToZDW::CONVERT_ZDW_CURRENT_VERSION = 11;
-const char ConvertToZDW::CONVERT_ZDW_VERSION_TAIL[3] = "";
+const char ConvertToZDW::CONVERT_ZDW_VERSION_TAIL[3] = "b";
 
 const char ConvertToZDW::ERR_CODE_TEXTS[ERR_CODE_COUNT][30] = {
 	"OK","NO_ARGS","CONVERSION_FAILED","UNTAR_FAILED","MISSING_DESC_FILE","MISSING_SQL_FILE",
