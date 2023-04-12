@@ -155,6 +155,7 @@ bool BufferedOrderedOutput::writeEndline(const void* data, const size_t size)
 	this->outStr.clear();
 	std::vector<ByteBuffer>::const_iterator colBuf = this->outputColumnBuffer.begin();
 	colBuf->print(this->outStr);
+	++colBuf;
 	for ( ; colBuf != this->outputColumnBuffer.end(); ++colBuf) {
 		this->outStr.append(1, '\t'); //force column separators to be tabs for now
 		colBuf->print(this->outStr);
