@@ -63,6 +63,7 @@ using std::vector;
 //version 11 -- add metadata block to header
 //version 11a -- fix virtual_export_row output
 //version 11b -- add zstandard support
+//version 11c -- fix invalid buffer reuse bug from ZSTD pr series.
 
 
 namespace {
@@ -138,7 +139,7 @@ namespace adobe {
 namespace zdw {
 
 const int UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION = 11;
-const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "b";
+const char UnconvertFromZDW_Base::UNCONVERT_ZDW_VERSION_TAIL[3] = "c";
 
 const size_t UnconvertFromZDW_Base::DEFAULT_LINE_LENGTH = 16 * 1024; //16K default
 
@@ -1363,7 +1364,20 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 						if (index > this->dictionarySize)
 							return CORRUPTED_DATA_ERROR;
 						pos = GetWord(index, row);
-						buffer.writePtr(pos, strlen(pos));
+
+						// In ZDW v9 or higher, all of the column strings are stored
+						// in a large persistent map that isn't modified throughout the
+						// ZDW process.  Thus, we can simply adjust our buffer pointers
+						// in v9.  However, in earlier formats the data is stored in
+						// a dictionary tree, which requires copying/reversing in
+						// order to extract data from correctly.  This reversed copy
+						// of the data is stored in `row`, which is reused from column
+						// to column.  Thus, we must copy the data out.
+						if (this->version >= 9) {
+							buffer.writePtr(pos, strlen(pos));
+						} else {
+							buffer.write(pos, strlen(pos));
+						}
 					} else {
 						//There's an empty field value.
 						outputDefault(buffer, ct);
