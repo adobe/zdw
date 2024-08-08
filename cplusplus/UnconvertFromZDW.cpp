@@ -20,6 +20,7 @@
 #include <math.h>
 #include <ostream>
 #include <set>
+#include <cassert>
 #include <sstream>
 #include <stdint.h>
 #include <string.h>
@@ -635,9 +636,10 @@ string UnconvertFromZDW_Base::getColumnDesc(const string& name, UCHAR type, size
 		case VIRTUAL_EXPORT_FILE_BASENAME:
 		case VARCHAR:
 		{
-			char temp[32];
+			const size_t TEMP_BUFFER_SIZE=32;
+			char temp[TEMP_BUFFER_SIZE];
 			const int char_size = (this->columnCharSize && this->columnCharSize[index]) ? this->columnCharSize[index] : 255; //before version 7, we don't have a size value
-			sprintf(temp, "varchar(%d)", char_size);
+			snprintf(temp, TEMP_BUFFER_SIZE, "varchar(%d)", char_size);
 			text += temp;
 		}
 		break;
@@ -1269,12 +1271,13 @@ void UnconvertFromZDW<T>::outputDefault(T& buffer, const UCHAR type)
 template <typename T>
 ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 {
+	const size_t TEMP_BUFFER_SIZE=64;
 	long u = 0;
 	char *pos;
 	ULONG index;
 	ULONGLONG visid_low = 0;
 	int tempLength;
-	char temp[64];
+	char temp[TEMP_BUFFER_SIZE];
 	bool bColumnWritten = false;
 
 	IncrementCurrentRowNumber();
@@ -1443,7 +1446,7 @@ ERR_CODE UnconvertFromZDW<T>::readNextRow(T& buffer)
 							pos = GetWord(index, row);
 							buffer.write(pos, strlen(pos));
 						} else { //version 1-3
-							tempLength = sprintf(temp, "%0.12lf", (val.n + this->columnBase[c]) / this->decimalFactor);
+							tempLength = snprintf(temp, TEMP_BUFFER_SIZE, "%0.12lf", (val.n + this->columnBase[c]) / this->decimalFactor);
 							buffer.write(temp, tempLength);
 						}
 					} else {

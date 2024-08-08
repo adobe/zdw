@@ -23,8 +23,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 
 namespace adobe {
@@ -348,7 +347,7 @@ protected:
 	ERR_CODE handleZDWParseBlockHeader();
 
 private:
-	boost::scoped_ptr<BufferedOutputInMem> pBufferedOutput;
+	std::unique_ptr<BufferedOutputInMem> pBufferedOutput;
 	size_t num_output_columns;
 	bool bUseInternalBuffer;
 };

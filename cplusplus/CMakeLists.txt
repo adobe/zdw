@@ -46,3 +46,6 @@ target_link_libraries(zdw ${ZLIB_LIBRARIES})
 target_link_libraries(unconvertDWfile zdw)
 target_link_libraries(convertDWfile zdw)
 
+set_property(TARGET zdw PROPERTY CXX_STANDARD 11)
+set_property(TARGET unconvertDWfile PROPERTY CXX_STANDARD 11)
+set_property(TARGET convertDWfile PROPERTY CXX_STANDARD 11)
